@@ -156,6 +156,21 @@
   .yigan-bl { bottom: -20px; left: -16px; }
   .yigan-br { bottom: -20px; right: -16px; }
 
+  /* 命盤模式：12地支固定位置（每邊3個），取代8個引干位置。字級較小以容納2-3字宮位名稱 */
+  .mingpan-label { font-size: 14px; white-space: nowrap; }
+  .rg-top-l    { top: -20px; left: 16.67%; transform: translateX(-50%); }
+  .rg-top-c    { top: -20px; left: 50%;    transform: translateX(-50%); }
+  .rg-top-r    { top: -20px; left: 83.33%; transform: translateX(-50%); }
+  .rg-bottom-l { bottom: -20px; left: 16.67%; transform: translateX(-50%); }
+  .rg-bottom-c { bottom: -20px; left: 50%;    transform: translateX(-50%); }
+  .rg-bottom-r { bottom: -20px; left: 83.33%; transform: translateX(-50%); }
+  .rg-left-t   { top: 16.67%; left: -18px; transform: translateY(-50%); flex-direction: column; line-height: 1.2; }
+  .rg-left-c   { top: 50%;    left: -18px; transform: translateY(-50%); flex-direction: column; line-height: 1.2; }
+  .rg-left-b   { top: 83.33%; left: -18px; transform: translateY(-50%); flex-direction: column; line-height: 1.2; }
+  .rg-right-t  { top: 16.67%; right: -18px; transform: translateY(-50%); flex-direction: column; line-height: 1.2; }
+  .rg-right-c  { top: 50%;    right: -18px; transform: translateY(-50%); flex-direction: column; line-height: 1.2; }
+  .rg-right-b  { top: 83.33%; right: -18px; transform: translateY(-50%); flex-direction: column; line-height: 1.2; }
+
   /* ══════════════════════════════════
      九宮 Grid  (3×3 cell wrapper)
   ══════════════════════════════════ */
@@ -289,8 +304,17 @@
   .bline-broken { display: flex; gap: 3px; }
   .bline-broken span { width: 6px; height: 2px; background: var(--line-color, #444); border-radius: 1px; display: block; }
 
-  /* ── 左中（空白）── */
-  .gc-left2 {}
+  /* ── 左中（命盤模式：大限歲數區間，平時空白）── 三行堆疊、全部置中，中間夾一條斜線 */
+  .gc-left2 { display: flex; align-items: center; justify-content: center; padding: 2px 3px; }
+  .gc-daxian {
+    display: flex; flex-direction: column; align-items: center;
+    font-size: 11px; color: #999; line-height: 1.15;
+    font-family: "MPLUS1Code", monospace;
+  }
+  .gc-daxian .dx-mid { font-size: 6px; font-weight: 900; -webkit-text-stroke: 0.4px currentColor; }
+  .gc-daxian .dx-end { position: relative; width: 100%; height: 1.15em; }
+  .gc-daxian .dx-num { position: absolute; left: 50%; top: 0; transform: translateX(-50%); }
+  .gc-daxian .dx-suffix { position: absolute; left: 50%; top: 3px; transform: translateX(8px); font-size: 8px; }
 
   /* ── 左下（馬）── */
   .gc-horse {
@@ -903,12 +927,17 @@
   <div class="plate-toggle" id="plate-toggle">
     <button type="button" class="plate-btn active" id="plate-yin" onclick="setPlateMode('yin')">陰盤</button>
     <button type="button" class="plate-btn" id="plate-yang" onclick="setPlateMode('yang')">陽盤</button>
+    <button type="button" class="plate-btn" id="plate-mingpan" onclick="toggleMingPan()">命盤</button>
   </div>
   <div class="plate-toggle plate-subtoggle" id="plate-subtoggle" style="display:none;">
     <button type="button" class="plate-btn active" id="plate-yang-time" onclick="setYangSubMode('time')">時家(置閏)</button>
     <button type="button" class="plate-btn" id="plate-yang-day" onclick="setYangSubMode('day')" style="text-decoration:line-through;">日家</button>
     <button type="button" class="plate-btn" id="plate-yang-month" onclick="setYangSubMode('month')">月家</button>
     <button type="button" class="plate-btn" id="plate-yang-year" onclick="setYangSubMode('year')">年家</button>
+  </div>
+  <div class="plate-toggle plate-subtoggle" id="mingpan-gender-toggle" style="display:none;">
+    <button type="button" class="plate-btn active" id="mingpan-male" onclick="setMingPanGender('male')">男命</button>
+    <button type="button" class="plate-btn" id="mingpan-female" onclick="setMingPanGender('female')">女命</button>
   </div>
   <div class="input-buttons">
     <button class="btn-now" onclick="resetChart()">重置</button>
@@ -978,6 +1007,19 @@
   <div class="yigan yigan-tr"     id="yin-2"></div>
   <div class="yigan yigan-bl"     id="yin-8"></div>
   <div class="yigan yigan-br"     id="yin-6"></div>
+  <!-- 命盤模式：12地支固定位置的人事宮位標籤，取代上方8個引干欄位 -->
+  <div class="yigan mingpan-label rg-top-l"    id="mp-top-l"    style="display:none;"></div>
+  <div class="yigan mingpan-label rg-top-c"    id="mp-top-c"    style="display:none;"></div>
+  <div class="yigan mingpan-label rg-top-r"    id="mp-top-r"    style="display:none;"></div>
+  <div class="yigan mingpan-label rg-right-t"  id="mp-right-t"  style="display:none;"></div>
+  <div class="yigan mingpan-label rg-right-c"  id="mp-right-c"  style="display:none;"></div>
+  <div class="yigan mingpan-label rg-right-b"  id="mp-right-b"  style="display:none;"></div>
+  <div class="yigan mingpan-label rg-bottom-r" id="mp-bottom-r" style="display:none;"></div>
+  <div class="yigan mingpan-label rg-bottom-c" id="mp-bottom-c" style="display:none;"></div>
+  <div class="yigan mingpan-label rg-bottom-l" id="mp-bottom-l" style="display:none;"></div>
+  <div class="yigan mingpan-label rg-left-b"   id="mp-left-b"   style="display:none;"></div>
+  <div class="yigan mingpan-label rg-left-c"   id="mp-left-c"   style="display:none;"></div>
+  <div class="yigan mingpan-label rg-left-t"   id="mp-left-t"   style="display:none;"></div>
 
   <div class="grid">
     <!-- 4 巽 -->
@@ -985,7 +1027,7 @@
     <div id="g4r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#4caf50;">4</span><span class="house-name" style="color:#4caf50;">巽</span></div><div class="bagua" style="--line-color:#4caf50;"><div class="bline-full"></div><div class="bline-full"></div><div class="bline-broken"><span></span><span></span></div></div></div>
     <div id="g4r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-4"></span></div>
     <div id="g4r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-4"></div></div>
-    <div id="g4r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"></div>
+    <div id="g4r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-4" class="gc-daxian mingpan-label" style="display:none;"></span></div>
     <div id="g4r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-4"></span></div>
     <div id="g4r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-4"></span></div>
     <div id="g4r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-4"></div></div>
@@ -998,7 +1040,7 @@
     <div id="g9r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#c0392b;">9</span><span class="house-name" style="color:#c0392b;">離</span></div><div class="bagua" style="--line-color:#c0392b;"><div class="bline-full"></div><div class="bline-broken"><span></span><span></span></div><div class="bline-full"></div></div></div>
     <div id="g9r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-9"></span></div>
     <div id="g9r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-9"></div></div>
-    <div id="g9r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"></div>
+    <div id="g9r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-9" class="gc-daxian mingpan-label" style="display:none;"></span></div>
     <div id="g9r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-9"></span></div>
     <div id="g9r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-9"></span></div>
     <div id="g9r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-9"></div></div>
@@ -1011,7 +1053,7 @@
     <div id="g2r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#a0714f;">2</span><span class="house-name" style="color:#a0714f;">坤</span></div><div class="bagua" style="--line-color:#a0714f;"><div class="bline-broken"><span></span><span></span></div><div class="bline-broken"><span></span><span></span></div><div class="bline-broken"><span></span><span></span></div></div></div>
     <div id="g2r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-2"></span></div>
     <div id="g2r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-2"></div></div>
-    <div id="g2r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"></div>
+    <div id="g2r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-2" class="gc-daxian mingpan-label" style="display:none;"></span></div>
     <div id="g2r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-2"></span></div>
     <div id="g2r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-2"></span></div>
     <div id="g2r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-2"></div></div>
@@ -1024,7 +1066,7 @@
     <div id="g3r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#1a7a1a;">3</span><span class="house-name" style="color:#1a7a1a;">震</span></div><div class="bagua" style="--line-color:#1a7a1a;"><div class="bline-broken"><span></span><span></span></div><div class="bline-broken"><span></span><span></span></div><div class="bline-full"></div></div></div>
     <div id="g3r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-3"></span></div>
     <div id="g3r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-3"></div></div>
-    <div id="g3r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"></div>
+    <div id="g3r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-3" class="gc-daxian mingpan-label" style="display:none;"></span></div>
     <div id="g3r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-3"></span></div>
     <div id="g3r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-3"></span></div>
     <div id="g3r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-3"></div></div>
@@ -1059,6 +1101,7 @@
         <div class="needle-half needle-s">S</div>
         <div class="needle-half needle-n">N</div>
       </div></div>
+      <span id="daxian-5" class="gc-daxian mingpan-label" style="display:none;"></span>
     </div></div>
     <div id="g5r2c3" class="gc gc-center" style="grid-column:3;grid-row:2;"><div class="dz9">
       <div class="dz9-cell" style="grid-column:3;grid-row:2;"><span class="dz9-branch" data-dz="酉">酉</span></div>
@@ -1087,7 +1130,7 @@
     <div id="g7r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#999999;">7</span><span class="house-name" style="color:#999999;">兌</span></div><div class="bagua" style="--line-color:#999999;"><div class="bline-broken"><span></span><span></span></div><div class="bline-full"></div><div class="bline-full"></div></div></div>
     <div id="g7r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-7"></span></div>
     <div id="g7r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-7"></div></div>
-    <div id="g7r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"></div>
+    <div id="g7r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-7" class="gc-daxian mingpan-label" style="display:none;"></span></div>
     <div id="g7r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-7"></span></div>
     <div id="g7r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-7"></span></div>
     <div id="g7r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-7"></div></div>
@@ -1100,7 +1143,7 @@
     <div id="g8r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#6b4423;">8</span><span class="house-name" style="color:#6b4423;">艮</span></div><div class="bagua" style="--line-color:#6b4423;"><div class="bline-full"></div><div class="bline-broken"><span></span><span></span></div><div class="bline-broken"><span></span><span></span></div></div></div>
     <div id="g8r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-8"></span></div>
     <div id="g8r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-8"></div></div>
-    <div id="g8r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"></div>
+    <div id="g8r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-8" class="gc-daxian mingpan-label" style="display:none;"></span></div>
     <div id="g8r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-8"></span></div>
     <div id="g8r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-8"></span></div>
     <div id="g8r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-8"></div></div>
@@ -1113,7 +1156,7 @@
     <div id="g1r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#2471a3;">1</span><span class="house-name" style="color:#2471a3;">坎</span></div><div class="bagua" style="--line-color:#2471a3;"><div class="bline-broken"><span></span><span></span></div><div class="bline-full"></div><div class="bline-broken"><span></span><span></span></div></div></div>
     <div id="g1r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-1"></span></div>
     <div id="g1r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-1"></div></div>
-    <div id="g1r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"></div>
+    <div id="g1r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-1" class="gc-daxian mingpan-label" style="display:none;"></span></div>
     <div id="g1r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-1"></span></div>
     <div id="g1r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-1"></span></div>
     <div id="g1r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-1"></div></div>
@@ -1126,7 +1169,7 @@
     <div id="g6r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#555555;">6</span><span class="house-name" style="color:#555555;">乾</span></div><div class="bagua" style="--line-color:#555555;"><div class="bline-full"></div><div class="bline-full"></div><div class="bline-full"></div></div></div>
     <div id="g6r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-6"></span></div>
     <div id="g6r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-6"></div></div>
-    <div id="g6r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"></div>
+    <div id="g6r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-6" class="gc-daxian mingpan-label" style="display:none;"></span></div>
     <div id="g6r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-6"></span></div>
     <div id="g6r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-6"></span></div>
     <div id="g6r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-6"></div></div>
@@ -1229,6 +1272,121 @@ function setYangSubMode(sub) {
   updateQuickNav();
 }
 
+// ── 命盤模式 ──
+// 固定套用「陽盤・時家(置閏)」計算該日期的盤（跟當下陰盤/陽盤選擇無關），
+// 在原本引干欄位（8個位置）改顯示紫微斗數十二宮（12個固定地支位置）。
+// 命宮＝時支所在固定位置，從命宮起逆時針依序放入十二宮名稱。
+// 男命/女命目前僅記錄選擇，用於大限順逆方向判斷（見 renderDaXian）。
+let MING_PAN_MODE = false;
+let MING_PAN_GENDER = 'male'; // 'male' | 'female'
+let _prevPlateMode = 'yin', _prevPlateSubmode = 'time'; // 命盤關閉時還原用
+
+function toggleMingPan() {
+  MING_PAN_MODE = !MING_PAN_MODE;
+  document.getElementById('plate-mingpan').classList.toggle('active', MING_PAN_MODE);
+  document.getElementById('mingpan-gender-toggle').style.display = MING_PAN_MODE ? 'flex' : 'none';
+
+  // 鎖定/解鎖 陰盤・陽盤・子模式 按鈕
+  const lockButtons = [
+    document.getElementById('plate-yin'),
+    document.getElementById('plate-yang'),
+    ...document.querySelectorAll('#plate-subtoggle button')
+  ];
+  lockButtons.forEach(btn => {
+    if (!btn) return;
+    btn.disabled = MING_PAN_MODE;
+    btn.style.opacity = MING_PAN_MODE ? '0.4' : '';
+    btn.style.pointerEvents = MING_PAN_MODE ? 'none' : '';
+  });
+
+  if (MING_PAN_MODE) {
+    _prevPlateMode = PLATE_MODE;
+    _prevPlateSubmode = PLATE_SUBMODE;
+    setPlateMode('yang');
+    setYangSubMode('time');
+    // 命盤模式固定套用「陽盤・時家(置閏)」，不需要讓人再切時/日/月/年，直接把整排按鈕藏起來
+    document.getElementById('plate-subtoggle').style.display = 'none';
+  } else {
+    setPlateMode(_prevPlateMode);
+    if (_prevPlateMode === 'yang') setYangSubMode(_prevPlateSubmode);
+  }
+
+  // 切換8個引干欄位 vs 12個命盤宮位標籤的顯示
+  ['yin-1','yin-2','yin-3','yin-4','yin-6','yin-7','yin-8','yin-9'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = MING_PAN_MODE ? 'none' : '';
+  });
+  document.querySelectorAll('.mingpan-label').forEach(el => {
+    el.style.display = MING_PAN_MODE ? '' : 'none';
+  });
+
+  // 命盤模式：中宮不顯示指南針，改放大限歲數；
+  // 十二長生／地支資訊（g5r1c1~g5r3c3，指南針以外的其餘子格）維持顯示，不受影響
+  const compassRing = document.getElementById('compassRing');
+  if (compassRing) compassRing.style.display = MING_PAN_MODE ? 'none' : '';
+}
+
+function setMingPanGender(g) {
+  MING_PAN_GENDER = g;
+  document.getElementById('mingpan-male').classList.toggle('active', g === 'male');
+  document.getElementById('mingpan-female').classList.toggle('active', g === 'female');
+}
+
+// 十二宮固定順序（從命宮起）；十二地支固定位置對照
+const MINGPAN_PALACE_NAMES = ['命宮','兄弟','夫妻','子女','財帛','疾厄','遷移','交友','事業','田宅','福德','父母'];
+const MINGPAN_BRANCH_POSITION = {
+  '巳':'top-l', '午':'top-c', '未':'top-r',
+  '申':'right-t', '酉':'right-c', '戌':'right-b',
+  '亥':'bottom-r', '子':'bottom-c', '丑':'bottom-l',
+  '寅':'left-b', '卯':'left-c', '辰':'left-t'
+};
+function renderMingPan(mingGongBranch) {
+  const startIdx = EARTH_BRANCH_LIST.indexOf(mingGongBranch);
+  if (startIdx < 0) return;
+  for (let i = 0; i < 12; i++) {
+    const branch = EARTH_BRANCH_LIST[(startIdx - i + 12) % 12]; // 從命宮起逆時針（地支遞減方向）
+    const posKey = MINGPAN_BRANCH_POSITION[branch];
+    const el = document.getElementById('mp-' + posKey);
+    if (!el) continue;
+    const name = MINGPAN_PALACE_NAMES[i];
+    // 左右兩側比照陰盤引干（.yigan-left/.yigan-right）做法：逐字拆成 span，靠 flex-direction:column 直式堆疊，
+    // 不使用 writing-mode（先前造成左右不對稱的問題來源）；上下兩側維持橫式整串文字。
+    if (posKey.startsWith('left') || posKey.startsWith('right')) {
+      el.innerHTML = name.split('').map(ch => `<span>${ch}</span>`).join('');
+    } else {
+      el.textContent = name;
+    }
+  }
+}
+
+// 命盤模式：排「大限」歲數區間，寫入各宮 gc-left2 空格（.gc-daxian），中宮則寫入指南針原本的位置
+// 規則：起運宮＝局數本身（1~9，含中宮）；第一大限＝1歲(虛歲)～局數，之後每宮固定+10年；
+//   方向：男命陽局順、陰局逆；女命陰局順、陽局逆；
+//   順逆走「系統一」九宮數字順序（1→2→3→4→5→6→7→8→9含中宮，循環），非實際順逆時針。
+// 中宮（5）：指南針在命盤模式下隱藏（見 toggleMingPan），該格改顯示中宮的大限歲數。
+function renderDaXian(solsticeType, chartNum, gender) {
+  const isYangJu = solsticeType === '陽';
+  const forward = (gender === 'male') ? isYangJu : !isYangJu; // 男陽局／女陰局＝順，其餘＝逆
+
+  // 清除舊資料
+  [1,2,3,4,5,6,7,8,9].forEach(h => {
+    const el = document.getElementById('daxian-' + h);
+    if (el) el.textContent = '';
+  });
+
+  let ageStart = 1;
+  let ageEnd = chartNum;
+  for (let i = 0; i < 9; i++) {
+    const house = forward
+      ? (((chartNum - 1 + i) % 9) + 1)
+      : (((chartNum - 1 - i) % 9 + 9) % 9 + 1);
+    const el = document.getElementById('daxian-' + house);
+    if (el) el.innerHTML = `<span class="dx-start">${String(ageStart).padStart(2,'0')}</span><span class="dx-mid">＼</span><span class="dx-end"><span class="dx-num">${String(ageEnd).padStart(2,'0')}</span><span class="dx-suffix">歲</span></span>`;
+    ageStart = ageEnd;
+    ageEnd = ageStart + 10;
+  }
+}
+
 // 取得該宮位可觸發十二長生的候選清單：天盤天干（寄干則有兩個，左→右）→ 值符（若本宮為值符宮，代表甲）
 function getHouseChangshengCandidates(cellEl) {
   const candidates = [];
@@ -1325,7 +1483,8 @@ const GATE_CONSTRAINT_TABLE = {
   '開門': [3, 4],
 };
 // ── 制判定（宮剋門，跟門迫相反的方向：宮的五行反過來剋制門）──
-// 僅限年家（年盤）套用；不算四害，純視覺標示，顏色比照「墓」字淡化處理。
+// 適用範圍：陽盤全系列（時家置閏／日／月／年盤），一般陰盤排除。
+// 不算四害，純視覺標示，顏色比照「墓」字淡化處理。
 const GATE_SUPPRESS_TABLE = {
   '休門': [2, 8],
   '生門': [3, 4],
@@ -1343,7 +1502,7 @@ function renderGateHTML(gate, house) {
   if (constraintHouses.includes(house)) {
     return `<span style="position:relative;display:inline-block;color:#c0392b;">${gate}<span class="tag gate-constraint">迫</span></span>`;
   }
-  if (PLATE_MODE === 'yang' && PLATE_SUBMODE === 'year') {
+  if (PLATE_MODE === 'yang') {
     const suppressHouses = GATE_SUPPRESS_TABLE[gate] || [];
     if (suppressHouses.includes(house)) {
       return `<span style="position:relative;display:inline-block;">${gate}<span class="tag gate-suppress">制</span></span>`;
@@ -1744,12 +1903,11 @@ function getYangChartNumber(y, m, d) {
   };
 }
 
-// 年盤專用：三元甲子局數表
-// 套用玄空飛星「三元甲子」的60年區塊，每180年循環：
+// 年盤／月盤局數：三元甲子公式（陽盤第三步以後流程與陰盤共用，局數本身另計，見下方函式）
+
+// 年盤：三元甲子＋180年循環，60年一區塊
 //   上元：1864起 → 陰1局；中元：1924起 → 陰4局；下元：1984起 → 陰7局
-// 換元邊界為立春（如1984/2/4癸亥年中元陰4局 → 1984/2/5甲子年下元陰7局），
-// 與排盤規則.md「年支須用節氣換年」原則一致，故效力年份（effectiveYear）採用八字年柱
-// 干支反推，不用西元曆年或農曆正月初一。陰陽遁固定為陰遁。
+//   效力年份採八字年柱干支反推（立春校正），不用西元曆年或農曆正月初一；陰陽遁固定為陰遁。
 const SAN_YUAN_ANCHOR_YEAR = 1864; // 上元起始年（甲子，以立春為界）
 const SAN_YUAN_JU_BY_YUAN = [1, 4, 7]; // [上元, 中元, 下元] 對應局數
 function getEffectiveYearFromGanZhi(y, yearGZ) {
@@ -1764,8 +1922,7 @@ function getEffectiveYearFromGanZhi(y, yearGZ) {
   }
   return y; // 理論上不會走到這裡，僅防呆
 }
-// 已驗證範圍：1800年起。1800年以前公式仍會照常計算（純mod 180運算，
-// 跟時家（置閏）那種鏈式模擬不同，沒有方向性限制），但缺乏比對資料，故標示為「未驗證外推」而非直接擋下。
+// 支援範圍：1800年起。1800年以前公式仍會照常計算（純mod 180運算），標示為未驗證外推而非直接擋下。
 const SAN_YUAN_VERIFIED_FROM_YEAR = 1800;
 function getYearSanYuanJu(y, m, d, yearGZ) {
   const effectiveYear = getEffectiveYearFromGanZhi(y, yearGZ);
@@ -1779,10 +1936,9 @@ function getYearSanYuanJu(y, m, d, yearGZ) {
     isVerified: effectiveYear >= SAN_YUAN_VERIFIED_FROM_YEAR
   };
 }
-// 月盤專用：跟年盤同一套「三元甲子」邏輯，只是週期縮小為5年一區塊、15年一循環
-// 月盤實際運作更接近年盤的縮小版：60個月＝5年（跟年干支60甲子循環一樣是精確離散系統，不套用會浮動
-// 的節氣連續量），故不需要時家（置閏）那套超神接氣、大雪/芒種置閏機制。effectiveYear沿用同一套立春校正反推
-// （見getEffectiveYearFromGanZhi），局數對照表也跟年盤共用同一張[1,4,7]，已驗證範圍同年盤沿用
+// 月盤：跟年盤同一套三元甲子邏輯，週期縮小為5年一區塊、15年一循環（60個月＝5年，跟年柱一樣是精確
+// 離散循環，不套用會浮動的節氣連續量，故不需要時盤那套超神接氣、置閏機制）。
+// effectiveYear沿用同一套立春校正反推，局數表也跟年盤共用同一張[1,4,7]，驗證範圍同年盤沿用
 // SAN_YUAN_VERIFIED_FROM_YEAR（1800年起）。
 function getMonthWuXingJu(y, m, d, yearGZ) {
   const effectiveYear = getEffectiveYearFromGanZhi(y, yearGZ);
@@ -1796,26 +1952,21 @@ function getMonthWuXingJu(y, m, d, yearGZ) {
     isVerified: effectiveYear >= SAN_YUAN_VERIFIED_FROM_YEAR
   };
 }
-// ⚠️ 日盤實驗性公式（尚無任何實測資料驗證，不接入 castChart 正式流程）
-// 推導邏輯：日柱跟月柱、年柱一樣是精確的60甲子離散循環，60天剛好等於日柱自己完整跑一輪甲子，
-// 比照月盤／年盤「1局＝該干支的一輪甲子循環長度」這條結構性規律，日盤應該是「60天一局、180天三元一輪」，
-// 局數表沿用同一張[1,4,7]。陰陽遁借用時家（置閏）的判定（純粹看真實節氣落在冬至→芒種
-// 或夏至→大雪哪一半年，不涉及置閏鏈式模擬本身要查的局數，只借用 solsticeType 這個欄位）。
-// 已知風險：
-// 1. 60天一區塊的「錨點日期」（哪一天是上元的第一天）完全沒有驗證資料，此處故意留白（anchorDateStr
-//    不傳時只回傳陰陽遁，chartNum為null），需要至少一組日盤實測資料（起局＋畫面上的上/中/下元標籤）
-//    才能反推出正確錨點，反推方式跟年盤/月盤那次相同。
-// 2. 陰陽遁borrow時家（置閏）判定這件事本身也還沒驗證，只是邏輯上比「強制陰遁」更說得通，需要實測資料佐證。
+// ⚠️ 日盤實驗性公式，尚無實測資料驗證，不接入 castChart 正式流程
+// 推導邏輯：日柱跟月柱、年柱一樣是精確的60甲子離散循環，比照「1局＝該干支一輪甲子循環長度」的結構性
+// 規律，日盤應為60天一局、180天三元一輪，局數表沿用同一張[1,4,7]。陰陽遁借用時盤的節氣半年判定
+// （純看真實節氣落在冬至→芒種或夏至→大雪哪一半年，不涉及置閏鏈式模擬）。
+// 已知風險：60天區塊的錨點日期（上元第一天）尚無驗證資料，此處故意留白（anchorDateStr不傳時只回傳
+// 陰陽遁，chartNum為null），需要至少一組日盤實測資料才能反推出正確錨點。
 function getDayWuXingJuTrial(y, m, d, anchorDateStr) {
-  const dunInfo = getYangChartNumber(y, m, d); // 借用時家（置閏）的陰陽遁判定（節氣冬至/夏至半年切分）
+  const dunInfo = getYangChartNumber(y, m, d); // 借用時盤的陰陽遁判定（節氣冬至/夏至半年切分）
   const solsticeType = dunInfo ? dunInfo.solsticeType : null;
   if (!anchorDateStr) {
     return {
       solsticeType,
       chartNum: null,
       _pendingAnchor: true,
-      _note: '骨架已完成（60天一局/180天三元，局數表沿用[1,4,7]），錨點日期尚未驗證。' +
-             '拿到第一組日盤實測資料後，呼叫本函式時傳入候選錨點日期字串（如"1864-01-01"，格式YYYY-MM-DD），比對結果反推出正確錨點。'
+      _note: '骨架已完成（60天一局/180天三元，局數表沿用[1,4,7]），錨點日期尚未驗證。'
     };
   }
   const anchor = new Date(anchorDateStr + 'T00:00:00Z');
@@ -1828,7 +1979,7 @@ function getDayWuXingJuTrial(y, m, d, anchorDateStr) {
     chartNum: SAN_YUAN_JU_BY_YUAN[blockIndex],
     yuanName: ['上元', '中元', '下元'][blockIndex],
     _experimental: true,
-    _note: '未經實測驗證，僅供對照，不接入正式日盤流程'
+    _note: '未經驗證，不接入正式日盤流程'
   };
 }
 // ==================== 陽盤引擎結束 ====================
@@ -2228,6 +2379,11 @@ function castChart() {
   document.getElementById('gz-h-gan').textContent = hGZ[0];
   document.getElementById('gz-h-zhi').textContent = hGZ[1];
 
+  // 命盤模式：命宮＝時支固定位置，逆時針放入十二宮
+  if (MING_PAN_MODE) {
+    renderMingPan(hGZ[1]);
+  }
+
   // 陽盤日/月/年盤：旬首/符頭/空亡/馬星/值符值使/引干，改用對應的干支；陰盤與陽盤時盤維持用時干支
   const effGZ = (PLATE_MODE === 'yang' && PLATE_SUBMODE === 'day') ? dGZ
               : (PLATE_MODE === 'yang' && PLATE_SUBMODE === 'month') ? mGZ
@@ -2238,7 +2394,7 @@ function castChart() {
   let solsticeType, chartNum, yangInfo = null;
   if (PLATE_MODE === 'yang') {
     // 年盤／月盤：改用三元甲子公式（見 getYearSanYuanJu／getMonthWuXingJu 註解）；
-    // 時家（置閏）：維持沿用9.2節氣表＋9.3置閏引擎
+    // 時盤：維持沿用9.2節氣表＋9.3置閏引擎
     if (PLATE_SUBMODE === 'year') {
       yangInfo = getYearSanYuanJu(y, m, d, yGZ); // 純mod 180公式，無方向性限制，任何年份皆可算
     } else if (PLATE_SUBMODE === 'month') {
@@ -2261,6 +2417,11 @@ function castChart() {
     chartNum = getChartNumber(lunar, h, ec);
   }
   document.getElementById('hb-qiju').textContent = solsticeType + chartNum + '局';
+
+  // 命盤模式：排大限（需先有陰陽遁＋局數才能算，故安排在此，晚於 renderMingPan 的呼叫點）
+  if (MING_PAN_MODE) {
+    renderDaXian(solsticeType, chartNum, MING_PAN_GENDER);
+  }
 
   // 排地盤天干
   const { earthStemMap, houseFiveStem } = getEarthStemMap(solsticeType, chartNum);
@@ -2347,6 +2508,7 @@ function castChart() {
           const hidingStemMap = guidingResult.guidingMap;
 
           // 伏吟/反吟標記顯示：有伏吟顯示星伏／門伏（標紅）；有反吟顯示星反（標紅）；無則顯示陰盤
+          // 命盤模式下改顯示男命/女命，特殊標記則用「・」接在後面（如「女命・星反」）
           const fuyinEl = document.getElementById('hb-fuyin');
           if (fuyinEl) {
             const labels = [];
@@ -2354,7 +2516,11 @@ function castChart() {
             if (guidingResult.isGateFrozen) labels.push('門伏');
             if (isStarReversed) labels.push('星反');
             if (isGateReversed) labels.push('門反');
-            if (labels.length) {
+            if (MING_PAN_MODE) {
+              const genderText = MING_PAN_GENDER === 'male' ? '男命' : '女命';
+              fuyinEl.textContent = labels.length ? (genderText + '・' + labels.join('')) : genderText;
+              fuyinEl.style.color = labels.length ? '#c0392b' : '';
+            } else if (labels.length) {
               fuyinEl.textContent = labels.join('');
               fuyinEl.style.color = '#c0392b';
             } else {
@@ -2385,7 +2551,7 @@ function castChart() {
               const isDutyHouse = String(g) === String(dutyStemHouse);
               diEl.innerHTML = renderStemHTML(earthStemMap[g] || '', g, decInfo.dutyStem, isDutyHouse);
             }
-            // 引干（不判定四害）——僅陰盤與陽盤時盤顯示；陽盤日/月/年盤經老師的排盤工具比對確認本來就不顯示引干（非待確認事項）
+            // 引干（不判定四害）——僅陰盤與陽盤時盤顯示；陽盤日/月/年盤本來就不顯示引干
             const showGuidingStem = !(PLATE_MODE === 'yang' && PLATE_SUBMODE !== 'time');
             if (yinEl) {
               const val = showGuidingStem ? (hidingStemMap[g] || '') : '';
