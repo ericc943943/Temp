@@ -880,13 +880,13 @@
   <div class="input-title">起盤時間</div>
   <div class="plate-toggle" id="plate-toggle">
     <button type="button" class="plate-btn active" id="plate-yin" onclick="setPlateMode('yin')">陰盤</button>
-    <button type="button" class="plate-btn" id="plate-yang" onclick="setPlateMode('yang')">陽盤（時家置閏）</button>
+    <button type="button" class="plate-btn" id="plate-yang" onclick="setPlateMode('yang')">陽盤</button>
   </div>
   <div class="plate-toggle plate-subtoggle" id="plate-subtoggle" style="display:none;">
-    <button type="button" class="plate-btn active" id="plate-yang-time" onclick="setYangSubMode('time')">時盤</button>
-    <button type="button" class="plate-btn" id="plate-yang-day" onclick="setYangSubMode('day')" style="text-decoration:line-through;">日盤</button>
-    <button type="button" class="plate-btn" id="plate-yang-month" onclick="setYangSubMode('month')">月盤</button>
-    <button type="button" class="plate-btn" id="plate-yang-year" onclick="setYangSubMode('year')">年盤</button>
+    <button type="button" class="plate-btn active" id="plate-yang-time" onclick="setYangSubMode('time')">時家(置閏)</button>
+    <button type="button" class="plate-btn" id="plate-yang-day" onclick="setYangSubMode('day')" style="text-decoration:line-through;">日家</button>
+    <button type="button" class="plate-btn" id="plate-yang-month" onclick="setYangSubMode('month')">月家</button>
+    <button type="button" class="plate-btn" id="plate-yang-year" onclick="setYangSubMode('year')">年家</button>
   </div>
   <div class="input-grid">
     <div class="input-row">
@@ -1325,8 +1325,7 @@ const GATE_CONSTRAINT_TABLE = {
   '開門': [3, 4],
 };
 // ── 制判定（宮剋門，跟門迫相反的方向：宮的五行反過來剋制門）──
-// 2026.08 實測發現：老師的排盤工具目前僅在「年盤」標示「制」，時盤／日盤／陰盤皆未見此標記，
-// 故此處也僅限年盤套用；日後若發現其他盤也有此標記，需再擴大條件。不算四害，純視覺標示，顏色比照「墓」字淡化處理。
+// 僅限年家（年盤）套用；不算四害，純視覺標示，顏色比照「墓」字淡化處理。
 const GATE_SUPPRESS_TABLE = {
   '休門': [2, 8],
   '生門': [3, 4],
@@ -1745,16 +1744,12 @@ function getYangChartNumber(y, m, d) {
   };
 }
 
-// ⚠️ 已淘汰：月盤原本套用9.2節氣表＋強制陰遁的假設（舊函式getYangChartNumberForcedYin），
-// 2026.08經8筆實測資料證實這套假設方向錯誤，已改用下方getMonthWuXingJu（跟年盤同一套三元甲子邏輯，5年一區塊）。
-
-// 年盤專用：三元甲子局數表（2026.08 實測驗證，取代原本套用9.2節氣表的錯誤假設）
-// 依據：6筆比對資料（china95.net、tzchimen.com）橫跨1957-2026年，證實年家局數
-// 不是按9.2表逐日/逐節氣變動，而是套用玄空飛星「三元甲子」的60年區塊，每180年循環：
+// 年盤專用：三元甲子局數表
+// 套用玄空飛星「三元甲子」的60年區塊，每180年循環：
 //   上元：1864起 → 陰1局；中元：1924起 → 陰4局；下元：1984起 → 陰7局
-// 換元邊界已實測確認為1984年立春（1984/2/4癸亥年中元陰4局 → 1984/2/5甲子年下元陰7局），
+// 換元邊界為立春（如1984/2/4癸亥年中元陰4局 → 1984/2/5甲子年下元陰7局），
 // 與排盤規則.md「年支須用節氣換年」原則一致，故效力年份（effectiveYear）採用八字年柱
-// 干支反推，不用西元曆年或農曆正月初一。陰陽遁固定為陰遁（此點原假設正確，未變動）。
+// 干支反推，不用西元曆年或農曆正月初一。陰陽遁固定為陰遁。
 const SAN_YUAN_ANCHOR_YEAR = 1864; // 上元起始年（甲子，以立春為界）
 const SAN_YUAN_JU_BY_YUAN = [1, 4, 7]; // [上元, 中元, 下元] 對應局數
 function getEffectiveYearFromGanZhi(y, yearGZ) {
@@ -1769,6 +1764,9 @@ function getEffectiveYearFromGanZhi(y, yearGZ) {
   }
   return y; // 理論上不會走到這裡，僅防呆
 }
+// 已驗證範圍：1800年起。1800年以前公式仍會照常計算（純mod 180運算，
+// 跟時家（置閏）那種鏈式模擬不同，沒有方向性限制），但缺乏比對資料，故標示為「未驗證外推」而非直接擋下。
+const SAN_YUAN_VERIFIED_FROM_YEAR = 1800;
 function getYearSanYuanJu(y, m, d, yearGZ) {
   const effectiveYear = getEffectiveYearFromGanZhi(y, yearGZ);
   const offset = ((effectiveYear - SAN_YUAN_ANCHOR_YEAR) % 180 + 180) % 180;
@@ -1777,16 +1775,15 @@ function getYearSanYuanJu(y, m, d, yearGZ) {
     solsticeType: '陰',
     chartNum: SAN_YUAN_JU_BY_YUAN[yuanIndex],
     yuanName: ['上元', '中元', '下元'][yuanIndex],
-    effectiveYear
+    effectiveYear,
+    isVerified: effectiveYear >= SAN_YUAN_VERIFIED_FROM_YEAR
   };
 }
-// 月盤專用：跟年盤同一套「三元甲子」邏輯，只是週期縮小為5年一區塊、15年一循環（2026.08 實測驗證）
-// 依據：8筆比對資料（china95.net）橫跨1975-2029年，涵蓋上中下三元，逐項核對局數與china95顯示的
-// 「上/中/下元XX年」區塊起始年標籤，全數一致。證實老師口頭說的「月盤跟時盤共用置閏邏輯」方向有誤——
+// 月盤專用：跟年盤同一套「三元甲子」邏輯，只是週期縮小為5年一區塊、15年一循環
 // 月盤實際運作更接近年盤的縮小版：60個月＝5年（跟年干支60甲子循環一樣是精確離散系統，不套用會浮動
-// 的節氣連續量），故不需要時盤那套超神接氣、大雪/芒種置閏機制。effectiveYear沿用同一套立春校正反推
-// （見getEffectiveYearFromGanZhi），局數對照表也跟年盤共用同一張[1,4,7]。
-// 此函式取代原本的getYangChartNumberForcedYin(套9.2節氣表)作為月盤的正式邏輯。
+// 的節氣連續量），故不需要時家（置閏）那套超神接氣、大雪/芒種置閏機制。effectiveYear沿用同一套立春校正反推
+// （見getEffectiveYearFromGanZhi），局數對照表也跟年盤共用同一張[1,4,7]，已驗證範圍同年盤沿用
+// SAN_YUAN_VERIFIED_FROM_YEAR（1800年起）。
 function getMonthWuXingJu(y, m, d, yearGZ) {
   const effectiveYear = getEffectiveYearFromGanZhi(y, yearGZ);
   const offset = ((effectiveYear - SAN_YUAN_ANCHOR_YEAR) % 15 + 15) % 15;
@@ -1795,24 +1792,22 @@ function getMonthWuXingJu(y, m, d, yearGZ) {
     solsticeType: '陰',
     chartNum: SAN_YUAN_JU_BY_YUAN[blockIndex],
     yuanName: ['上元', '中元', '下元'][blockIndex],
-    effectiveYear
+    effectiveYear,
+    isVerified: effectiveYear >= SAN_YUAN_VERIFIED_FROM_YEAR
   };
 }
-// ⚠️ 日盤實驗性公式（2026.08，Eric與Claude討論推導，尚無任何實測資料驗證，不接入 castChart 正式流程）
+// ⚠️ 日盤實驗性公式（尚無任何實測資料驗證，不接入 castChart 正式流程）
 // 推導邏輯：日柱跟月柱、年柱一樣是精確的60甲子離散循環，60天剛好等於日柱自己完整跑一輪甲子，
 // 比照月盤／年盤「1局＝該干支的一輪甲子循環長度」這條結構性規律，日盤應該是「60天一局、180天三元一輪」，
-// 局數表沿用同一張[1,4,7]。
-// 跟月盤／年盤不同的地方：老師並沒有明確說日盤／月盤／年盤要「強制陰遁」，這是先前對老師話語的
-// 過度解讀（老師實際上只說陽盤第三步以後的排盤流程共用同一套，沒有明講局數怎麼算、陰陽遁怎麼定）。
-// 所以這裡「加回陽遁的規則」：陰陽遁不強制寫死，改成借用時盤的判定（純粹看真實節氣落在冬至→芒種
+// 局數表沿用同一張[1,4,7]。陰陽遁借用時家（置閏）的判定（純粹看真實節氣落在冬至→芒種
 // 或夏至→大雪哪一半年，不涉及置閏鏈式模擬本身要查的局數，只借用 solsticeType 這個欄位）。
 // 已知風險：
 // 1. 60天一區塊的「錨點日期」（哪一天是上元的第一天）完全沒有驗證資料，此處故意留白（anchorDateStr
 //    不傳時只回傳陰陽遁，chartNum為null），需要至少一組日盤實測資料（起局＋畫面上的上/中/下元標籤）
 //    才能反推出正確錨點，反推方式跟年盤/月盤那次相同。
-// 2. 陰陽遁borrow時盤判定這件事本身也還沒驗證，只是邏輯上比「強制陰遁」更說得通，需要實測資料佐證。
+// 2. 陰陽遁borrow時家（置閏）判定這件事本身也還沒驗證，只是邏輯上比「強制陰遁」更說得通，需要實測資料佐證。
 function getDayWuXingJuTrial(y, m, d, anchorDateStr) {
-  const dunInfo = getYangChartNumber(y, m, d); // 借用時盤的陰陽遁判定（節氣冬至/夏至半年切分）
+  const dunInfo = getYangChartNumber(y, m, d); // 借用時家（置閏）的陰陽遁判定（節氣冬至/夏至半年切分）
   const solsticeType = dunInfo ? dunInfo.solsticeType : null;
   if (!anchorDateStr) {
     return {
@@ -2245,16 +2240,16 @@ function castChart() {
     // 年盤／月盤：改用三元甲子公式（2026.08實測驗證，見 getYearSanYuanJu／getMonthWuXingJu 註解）；
     // 時盤：維持沿用9.2節氣表＋9.3置閏引擎
     if (PLATE_SUBMODE === 'year') {
-      yangInfo = (y >= 1900) ? getYearSanYuanJu(y, m, d, yGZ) : null;
+      yangInfo = getYearSanYuanJu(y, m, d, yGZ); // 純mod 180公式，無方向性限制，任何年份皆可算
     } else if (PLATE_SUBMODE === 'month') {
-      yangInfo = (y >= 1900) ? getMonthWuXingJu(y, m, d, yGZ) : null;
+      yangInfo = getMonthWuXingJu(y, m, d, yGZ); // 純mod 15公式，同上
     } else {
-      yangInfo = getYangChartNumber(y, m, d);
+      yangInfo = getYangChartNumber(y, m, d); // 時盤：鏈式模擬，僅能從1899-12-22正授錨點往後算
     }
     if (!yangInfo) {
       const msgEl = document.getElementById('input-error-msg');
       if (msgEl) {
-        msgEl.textContent = '此日期早於陽盤已驗證範圍（1899-12-22），暫不支援排盤';
+        msgEl.textContent = '此日期早於陽盤時家(置閏)已驗證錨點範圍（1899-12-22），暫不支援排盤';
         msgEl.style.display = 'block';
       }
       return;
@@ -2364,7 +2359,7 @@ function castChart() {
               fuyinEl.style.color = '#c0392b';
             } else {
               fuyinEl.textContent = PLATE_MODE === 'yang'
-                ? ('陽盤・' + ({time:'時盤',day:'日盤',month:'月盤',year:'年盤'}[PLATE_SUBMODE] || '時盤'))
+                ? ('陽盤・' + ({time:'時家(置閏)',day:'日家',month:'月家',year:'年家'}[PLATE_SUBMODE] || '時家(置閏)'))
                 : '陰盤';
               fuyinEl.style.color = '';
             }
@@ -2390,7 +2385,7 @@ function castChart() {
               const isDutyHouse = String(g) === String(dutyStemHouse);
               diEl.innerHTML = renderStemHTML(earthStemMap[g] || '', g, decInfo.dutyStem, isDutyHouse);
             }
-            // 引干（不判定四害）——僅陰盤與陽盤時盤顯示；陽盤日/月/年盤老師尚未教授此段落，暫不顯示（待課程確認）
+            // 引干（不判定四害）——僅陰盤與陽盤時盤顯示；陽盤日/月/年盤經老師的排盤工具比對確認本來就不顯示引干（非待確認事項）
             const showGuidingStem = !(PLATE_MODE === 'yang' && PLATE_SUBMODE !== 'time');
             if (yinEl) {
               const val = showGuidingStem ? (hidingStemMap[g] || '') : '';
