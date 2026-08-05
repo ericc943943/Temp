@@ -2005,18 +2005,14 @@ function getMonthWuXingJu(y, m, d, yearGZ) {
     isVerified: effectiveYear >= SAN_YUAN_VERIFIED_FROM_YEAR
   };
 }
-// 陽盤日盤：局數公式（2026.08 實測驗證，8組連續資料 2026/8/3–8/11，涵蓋甲辰旬→甲寅旬跨旬界）
-// 推翻的舊假設：①60天一局套年盤/月盤同一張[1,4,7]表 ②跟時盤共用9.2節氣表＋9.3置閏引擎
-// ③日本座山20天一局系統——三者皆與實測資料不符，詳見排盤規則.md 9.5節「已排除的候選假設」。
-// 正式公式：局數 = 9 − (n mod 9)，n＝目標日期相對於下方錨點的實際日曆天數差（不是60甲子循環內
-// 的位置——9不整除60，兩者不等價，必須用實際天數差才能算對）。
-// 8組資料逐一代入零誤差，且8/7→8/8跨旬界時局數平順遞減（5→4）無斷點，證實局數是純日柱線性函式、
-// 跟旬別無關，屬於跟月柱/年柱同性質的離散精確循環（不套用置閏，見9.1結構性原理）。
-// 錨點：2026-08-03（日柱己酉，實測起局陰9局，即 n mod 9 = 0）。
-// ⚠️ 陰陽遁尚未定案，此處暫套用「假設2」：借用時盤getYangChartNumber()的節氣冬至/夏至半年判定
-// （比照2.1節通用規則），與「固定陰遁」假設（比照年盤/月盤9.4節）在冬至後夏至前的資料出現前
-// 無法區分——8組現有資料全落在大暑～處暑（夏至後冬至前），兩假設在此區間預測結果相同。
-// 需要冬至後、夏至前的實測資料才能確認，詳見排盤規則.md 9.5節。
+// ⚠️ 陰陽遁方向假設更新（2026.08）：老師明確表示日盤跟時盤、陰盤一樣有分陰陽遁（不同於年盤/月盤固定陰遁），
+// 這點提升為課堂依據的結構性事實。但實際切分／方向機制仍待資料驗證，目前寫入兩層假設：
+//   假設2（陰陽遁判定）：借用時盤節氣冬至/夏至半年判定，尚待驗證
+//   假設3（陽遁方向翻轉）：時盤9.2節氣表本身陽遁半年局數遞增、陰遁半年遞減，若日盤遵循同一原則，
+//     陽遁期間應把現有陰遁遞減公式鏡像成遞增。此為「方向翻轉、但不重置」版本——沿用同一個錨點與
+//     diffDays線性計數，只是陽遁時改用 1+(n mod9) 遞增映射，陰遁維持 9-(n mod9) 遞減映射（已驗證）。
+//     尚未排除的另一種可能：冬至/夏至邊界不是平滑翻轉，而是整個歸零重置（見排盤規則.md 9.5節待驗證）；
+//     此版本尚無法處理重置情境，需要2026/12/21-23冬至前後跨邊界資料才能判斷是翻轉還是重置。
 const DAY_JU_ANCHOR = new Date(Date.UTC(2026, 7, 3)); // 2026-08-03，日柱己酉，n mod 9 = 0（陰9局）
 function getDayJu(y, m, d) {
   const dunInfo = getYangChartNumber(y, m, d); // 陰陽遁借用時盤節氣判定（假設2，待驗證，見上方註解）
@@ -2024,11 +2020,15 @@ function getDayJu(y, m, d) {
   const target = new Date(Date.UTC(y, m - 1, d));
   const diffDays = Math.round((target - DAY_JU_ANCHOR) / 86400000);
   const nMod9 = ((diffDays % 9) + 9) % 9;
+  const isYang = dunInfo.solsticeType === '陽';
   return {
     solsticeType: dunInfo.solsticeType,
-    chartNum: 9 - nMod9,
-    _dunAssumption: 2, // 標記目前陰陽遁採用假設2，尚未實測確認
-    _note: '局數公式已驗證（2026.08，8組實測資料），陰陽遁規則暫套用假設2（借用節氣冬至/夏至判定），尚未實測確認'
+    chartNum: isYang ? (1 + nMod9) : (9 - nMod9), // 陽遁：假設3鏡像遞增（未驗證）；陰遁：已驗證公式
+    _dunAssumption: isYang ? 3 : 2,
+    _verified: !isYang, // 陰遁分支已用8組實測資料驗證；陽遁分支純邏輯外推，尚無任何實測資料
+    _note: isYang
+      ? '⚠️陽遁公式為假設3（方向翻轉鏡像），尚無實測資料驗證，僅供對照，等冬至後資料回來比對'
+      : '局數公式已驗證（2026.08，8組實測資料），陰陽遁判定本身仍是假設2，待驗證'
   };
 }
 // ==================== 陽盤引擎結束 ====================
@@ -2451,7 +2451,7 @@ function castChart() {
     } else if (PLATE_SUBMODE === 'month') {
       yangInfo = getMonthWuXingJu(y, m, d, yGZ); // 純mod 15公式，同上
     } else if (PLATE_SUBMODE === 'day') {
-      yangInfo = getDayJu(y, m, d); // 純日柱線性公式（2026.08驗證），陰陽遁暫借時盤節氣判定（假設2，待驗證）
+      yangInfo = getDayJu(lunarY, lunarM, lunarD); // 純日柱線性公式（2026.08驗證）；用子時跨日調整後的日期（與dGZ同基準，23:00起算次日），陰陽遁暫借時盤節氣判定（假設2，待驗證）
     } else {
       yangInfo = getYangChartNumber(y, m, d); // 時盤：鏈式模擬，僅能從1899-12-22正授錨點往後算
     }
@@ -2580,8 +2580,11 @@ function castChart() {
               detailParts.push('時家置閏');
               detailParts.push(MING_PAN_GENDER === 'male' ? '男命' : '女命');
             } else if (PLATE_MODE === 'yang') {
-              // 日家局數公式已驗證，但陰陽遁規則仍是假設2（借用節氣冬至/夏至判定），未實測確認前於標記欄位加註提醒
-              detailParts.push({time:'時家置閏',day:'日家（遁待驗證）',month:'月家',year:'年家'}[PLATE_SUBMODE] || '時家置閏');
+              // 日家標記：陰遁分支已驗證，陽遁分支是假設3（方向翻轉鏡像）尚無實測資料，加註提醒
+              const dayLabel = (PLATE_SUBMODE === 'day')
+                ? (solsticeType === '陽' ? '日家（陽遁公式未驗證）' : '日家（陰陽遁判定待驗證）')
+                : '日家';
+              detailParts.push({time:'時家置閏',day:dayLabel,month:'月家',year:'年家'}[PLATE_SUBMODE] || '時家置閏');
             }
             let html = detailParts.join('、');
             if (fuyinLabels.length) {
