@@ -42,7 +42,7 @@
   ══════════════════════════════════ */
   .header {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-columns: 1fr;
     grid-template-rows: auto auto;
     border: 2px solid #111;
     border-radius: 12px;
@@ -55,10 +55,9 @@
     margin-right: auto;
   }
 
-  .h-col-left  { grid-column: 1; grid-row: 1; border-right: 1px solid #ddd; padding: 6px 8px; }
-  .h-col-mid   { grid-column: 2 / 4; grid-row: 1; padding: 6px 8px; }
+  .h-col-top { grid-column: 1; grid-row: 1; padding: 6px 8px; }
   .h-col-combined {
-    grid-column: 1 / 4;
+    grid-column: 1 / -1;
     grid-row: 2;
     border-top: 2px solid #111;
     padding: 0;
@@ -117,7 +116,6 @@
   .h-table td.hl {
     color: #aaa;
     text-align: center;
-    width: 2.5em;
   }
   /* 內容欄（置中） */
   .h-table td.hv {
@@ -455,31 +453,35 @@
   }
   .plate-btn {
     flex: 1;
+    box-sizing: border-box;
     border: 1px solid #ccc;
     border-radius: 6px;
     background: #f5f5f5;
     color: #888;
-    font-size: 13px;
-    padding: 7px 4px;
+    font-size: 12px;
+    padding: 5px 4px;
     cursor: pointer;
   }
   .plate-btn.active {
-    background: #333;
-    border-color: #333;
-    color: #fff;
+    background: #f5f5f5;
+    border: 2px solid #333;
+    color: #333;
   }
   .plate-subtoggle {
     margin-top: -6px;
   }
   .plate-subtoggle .plate-btn {
-    font-size: 12px;
-    padding: 5px 4px;
     background: #fafafa;
     color: #999;
   }
   .plate-subtoggle .plate-btn.active {
-    background: #666;
-    border-color: #666;
+    background: #fafafa;
+    border: 2px solid #666;
+    color: #666;
+  }
+  #plate-yin-row .plate-btn.active {
+    background: #333;
+    border-color: #333;
     color: #fff;
   }
   .input-row {
@@ -925,13 +927,15 @@
     </div>
   </div>
   <div class="plate-toggle" id="plate-toggle">
-    <button type="button" class="plate-btn active" id="plate-yin" onclick="setPlateMode('yin')">陰盤</button>
     <button type="button" class="plate-btn" id="plate-yang" onclick="setPlateMode('yang')">陽盤</button>
     <button type="button" class="plate-btn" id="plate-mingpan" onclick="toggleMingPan()">命盤</button>
   </div>
+  <div class="plate-toggle plate-subtoggle" id="plate-yin-row">
+    <button type="button" class="plate-btn active" id="plate-yin" onclick="setPlateMode('yin')">陰盤</button>
+  </div>
   <div class="plate-toggle plate-subtoggle" id="plate-subtoggle" style="display:none;">
     <button type="button" class="plate-btn active" id="plate-yang-time" onclick="setYangSubMode('time')">時家(置閏)</button>
-    <button type="button" class="plate-btn" id="plate-yang-day" onclick="setYangSubMode('day')" style="text-decoration:line-through;">日家</button>
+    <button type="button" class="plate-btn" id="plate-yang-day" onclick="setYangSubMode('day')">日家</button>
     <button type="button" class="plate-btn" id="plate-yang-month" onclick="setYangSubMode('month')">月家</button>
     <button type="button" class="plate-btn" id="plate-yang-year" onclick="setYangSubMode('year')">年家</button>
   </div>
@@ -952,20 +956,24 @@
 <div id="paipan-result" style="display:block;">
 
 <div class="header">
-  <div class="h-col-left">
+  <div class="h-col-top">
     <table class="h-table">
-      <tr><td class="hl">西元</td><td class="hv" id="sy">—</td><td class="hv" id="sm">—</td><td class="hv" id="sd">—</td><td class="hv" id="st">—</td></tr>
-      <tr><td class="hl">農曆</td><td class="hv" id="ly">—</td><td class="hv" id="lm">—</td><td class="hv" id="ld">—</td><td class="hv" id="lt">—</td></tr>
-      <tr><td class="hl">天干</td><td class="hv" id="gz-y-gan">—</td><td class="hv" id="gz-m-gan">—</td><td class="hv" id="gz-d-gan">—</td><td class="hv" id="gz-h-gan">—</td></tr>
-      <tr><td class="hl">地支</td><td class="hv" id="gz-y-zhi">—</td><td class="hv" id="gz-m-zhi">—</td><td class="hv" id="gz-d-zhi">—</td><td class="hv" id="gz-h-zhi">—</td></tr>
-    </table>
-  </div>
-  <div class="h-col-mid">
-    <table class="h-table">
-      <tr><td class="hl">起局</td><td class="hv" id="hb-qiju">—</td><td class="hl">類型</td><td class="hv" id="hb-fuyin">—</td></tr>
-      <tr><td class="hl">旬首</td><td class="hv" id="hb-xun">—</td><td class="hl">符頭</td><td class="hv" id="hb-dutyStem">—</td></tr>
-      <tr><td class="hl">值符</td><td class="hv" id="hb-zhifu">—</td><td class="hl">值使</td><td class="hv" id="hb-zhishi">—</td></tr>
-      <tr><td class="hl">空亡</td><td class="hv" id="hb-voidBranches">—</td><td class="hl">驛馬</td><td class="hv" id="hb-travel-horse">—</td></tr>
+      <tr>
+        <td class="hl">西元</td><td class="hv" id="sy">—</td><td class="hv" id="sm">—</td><td class="hv" id="sd">—</td><td class="hv" id="st">—</td>
+        <td class="hl">排盤</td><td class="hv" id="hb-fuyin">—</td><td class="hl">局數</td><td class="hv" id="hb-qiju">—</td><td class="hl">旬首</td><td class="hv" id="hb-xun">—</td>
+      </tr>
+      <tr>
+        <td class="hl">農曆</td><td class="hv" id="ly">—</td><td class="hv" id="lm">—</td><td class="hv" id="ld">—</td><td class="hv" id="lt">—</td>
+        <td class="hl">符頭</td><td class="hv" id="hb-dutyStem">—</td><td class="hl">值符</td><td class="hv" id="hb-zhifu">—</td><td class="hl">值使</td><td class="hv" id="hb-zhishi">—</td>
+      </tr>
+      <tr>
+        <td class="hl">天干</td><td class="hv" id="gz-y-gan">—</td><td class="hv" id="gz-m-gan">—</td><td class="hv" id="gz-d-gan">—</td><td class="hv" id="gz-h-gan">—</td>
+        <td class="hl">空亡</td><td class="hv" id="hb-voidBranches">—</td><td class="hl">驛馬</td><td class="hv" id="hb-travel-horse">—</td><td class="hl">用神</td><td class="hv" id="hb-yongshen">—</td>
+      </tr>
+      <tr>
+        <td class="hl">地支</td><td class="hv" id="gz-y-zhi">—</td><td class="hv" id="gz-m-zhi">—</td><td class="hv" id="gz-d-zhi">—</td><td class="hv" id="gz-h-zhi">—</td>
+        <td class="hl">標記</td><td class="hv" colspan="5" id="hb-marker">—</td>
+      </tr>
     </table>
   </div>
   <div class="h-col-combined">
@@ -1257,73 +1265,98 @@ let _activeChangshengIndex = -1;
 // 陰盤／陽盤（時盤／日盤）切換
 let PLATE_MODE = 'yin';    // 'yin' | 'yang'
 let PLATE_SUBMODE = 'time'; // 'time' | 'day'（僅陽盤適用）
-function setPlateMode(mode) {
+function applyPlateMode(mode) {
   PLATE_MODE = mode;
   document.getElementById('plate-yin').classList.toggle('active', mode === 'yin');
   document.getElementById('plate-yang').classList.toggle('active', mode === 'yang');
-  document.getElementById('plate-subtoggle').style.display = mode === 'yang' ? 'flex' : 'none';
+  document.getElementById('plate-yin-row').style.display = (mode === 'yin' && !MING_PAN_MODE) ? 'flex' : 'none';
+  document.getElementById('plate-subtoggle').style.display = (mode === 'yang' && !MING_PAN_MODE) ? 'flex' : 'none';
   updateQuickNav();
 }
-function setYangSubMode(sub) {
+function setPlateMode(mode) {
+  if (MING_PAN_MODE) {
+    // 命盤模式下點陰盤/陽盤＝視為主動離開命盤模式、改切到點的這個模式（比鎖住按鈕更直覺）
+    exitMingPanMode();
+    applyPlateMode(mode);
+    return;
+  }
+  if (mode === 'yang' && PLATE_MODE === 'yang') {
+    // 陽盤已選中時再點一次＝取消選取，回到陰盤（陰盤按鈕本身移到第二排，不然點不回去）
+    applyPlateMode('yin');
+    return;
+  }
+  applyPlateMode(mode);
+}
+function applyYangSubMode(sub) {
   PLATE_SUBMODE = sub;
   ['time','day','month','year'].forEach(s => {
     document.getElementById('plate-yang-' + s).classList.toggle('active', sub === s);
   });
   updateQuickNav();
 }
+function setYangSubMode(sub) {
+  if (MING_PAN_MODE) exitMingPanMode();
+  applyYangSubMode(sub);
+}
 
 // ── 命盤模式 ──
 // 固定套用「陽盤・時家(置閏)」計算該日期的盤（跟當下陰盤/陽盤選擇無關），
 // 在原本引干欄位（8個位置）改顯示紫微斗數十二宮（12個固定地支位置）。
-// 命宮＝時支所在固定位置，從命宮起逆時針依序放入十二宮名稱。
-// 男命/女命目前僅記錄選擇，用於大限順逆方向判斷（見 renderDaXian）。
+// 命宮＝時支所在固定位置，從命宮起逆時針依序放入十二宮名稱（見排盤規則.md外部討論，非課程逐字稿內容）。
+// 男命/女命目前僅記錄選擇，尚未套用大限順逆邏輯（待確認，見開發準則.md待確認事項）。
 let MING_PAN_MODE = false;
 let MING_PAN_GENDER = 'male'; // 'male' | 'female'
 let _prevPlateMode = 'yin', _prevPlateSubmode = 'time'; // 命盤關閉時還原用
 
-function toggleMingPan() {
-  MING_PAN_MODE = !MING_PAN_MODE;
-  document.getElementById('plate-mingpan').classList.toggle('active', MING_PAN_MODE);
-  document.getElementById('mingpan-gender-toggle').style.display = MING_PAN_MODE ? 'flex' : 'none';
-
-  // 鎖定/解鎖 陰盤・陽盤・子模式 按鈕
-  const lockButtons = [
-    document.getElementById('plate-yin'),
-    document.getElementById('plate-yang'),
-    ...document.querySelectorAll('#plate-subtoggle button')
-  ];
-  lockButtons.forEach(btn => {
-    if (!btn) return;
-    btn.disabled = MING_PAN_MODE;
-    btn.style.opacity = MING_PAN_MODE ? '0.4' : '';
-    btn.style.pointerEvents = MING_PAN_MODE ? 'none' : '';
+// 關閉命盤模式的共用部分：還原命盤相關 UI（標籤、指南針、引干欄位），但不動 PLATE_MODE本身，
+// 交由呼叫端決定接下來要套用哪個模式（回到進入命盤前的模式，或使用者剛點的新模式）
+function exitMingPanMode() {
+  if (!MING_PAN_MODE) return;
+  MING_PAN_MODE = false;
+  document.getElementById('plate-mingpan').classList.remove('active');
+  document.getElementById('mingpan-gender-toggle').style.display = 'none';
+  ['yin-1','yin-2','yin-3','yin-4','yin-6','yin-7','yin-8','yin-9'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = '';
   });
+  document.querySelectorAll('.mingpan-label').forEach(el => { el.style.display = 'none'; });
+  const compassRing = document.getElementById('compassRing');
+  if (compassRing) compassRing.style.display = '';
+}
 
+function toggleMingPan() {
   if (MING_PAN_MODE) {
-    _prevPlateMode = PLATE_MODE;
-    _prevPlateSubmode = PLATE_SUBMODE;
-    setPlateMode('yang');
-    setYangSubMode('time');
-    // 命盤模式固定套用「陽盤・時家(置閏)」，不需要讓人再切時/日/月/年，直接把整排按鈕藏起來
-    document.getElementById('plate-subtoggle').style.display = 'none';
-  } else {
-    setPlateMode(_prevPlateMode);
-    if (_prevPlateMode === 'yang') setYangSubMode(_prevPlateSubmode);
+    // 點「命盤」關閉：還原成進入命盤前原本選的模式
+    exitMingPanMode();
+    applyPlateMode(_prevPlateMode);
+    if (_prevPlateMode === 'yang') applyYangSubMode(_prevPlateSubmode);
+    return;
   }
+
+  // 點「命盤」開啟
+  MING_PAN_MODE = true;
+  _prevPlateMode = PLATE_MODE;
+  _prevPlateSubmode = PLATE_SUBMODE;
+  document.getElementById('plate-mingpan').classList.add('active');
+  document.getElementById('mingpan-gender-toggle').style.display = 'flex';
+  applyPlateMode('yang');
+  applyYangSubMode('time');
+  // 命盤模式固定套用「陽盤・時家(置閏)」，不需要讓人再切時/日/月/年，直接把整排按鈕藏起來
+  document.getElementById('plate-subtoggle').style.display = 'none';
 
   // 切換8個引干欄位 vs 12個命盤宮位標籤的顯示
   ['yin-1','yin-2','yin-3','yin-4','yin-6','yin-7','yin-8','yin-9'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.style.display = MING_PAN_MODE ? 'none' : '';
+    if (el) el.style.display = 'none';
   });
   document.querySelectorAll('.mingpan-label').forEach(el => {
-    el.style.display = MING_PAN_MODE ? '' : 'none';
+    el.style.display = '';
   });
 
-  // 命盤模式：中宮不顯示指南針，改放大限歲數；
+  // 命盤模式：中宮不顯示指南針（老師的排盤工具中宮不放干支類資訊），改放大限歲數；
   // 十二長生／地支資訊（g5r1c1~g5r3c3，指南針以外的其餘子格）維持顯示，不受影響
   const compassRing = document.getElementById('compassRing');
-  if (compassRing) compassRing.style.display = MING_PAN_MODE ? 'none' : '';
+  if (compassRing) compassRing.style.display = 'none';
 }
 
 function setMingPanGender(g) {
@@ -1332,7 +1365,7 @@ function setMingPanGender(g) {
   document.getElementById('mingpan-female').classList.toggle('active', g === 'female');
 }
 
-// 十二宮固定順序（從命宮起）；十二地支固定位置對照
+// 十二宮固定順序（從命宮起）；十二地支固定位置對照（見排盤規則.md外部討論）
 const MINGPAN_PALACE_NAMES = ['命宮','兄弟','夫妻','子女','財帛','疾厄','遷移','交友','事業','田宅','福德','父母'];
 const MINGPAN_BRANCH_POSITION = {
   '巳':'top-l', '午':'top-c', '未':'top-r',
@@ -1360,7 +1393,8 @@ function renderMingPan(mingGongBranch) {
 }
 
 // 命盤模式：排「大限」歲數區間，寫入各宮 gc-left2 空格（.gc-daxian），中宮則寫入指南針原本的位置
-// 規則：起運宮＝局數本身（1~9，含中宮）；第一大限＝1歲(虛歲)～局數，之後每宮固定+10年；
+// 依據：老師app（tzchimen）教材圖22/23——起運宮＝局數本身（1~9，含中宮）；
+//   第一大限＝1歲(虛歲)～局數，之後每宮固定+10年；
 //   方向：男命陽局順、陰局逆；女命陰局順、陽局逆；
 //   順逆走「系統一」九宮數字順序（1→2→3→4→5→6→7→8→9含中宮，循環），非實際順逆時針。
 // 中宮（5）：指南針在命盤模式下隱藏（見 toggleMingPan），該格改顯示中宮的大限歲數。
@@ -1483,7 +1517,7 @@ const GATE_CONSTRAINT_TABLE = {
   '開門': [3, 4],
 };
 // ── 制判定（宮剋門，跟門迫相反的方向：宮的五行反過來剋制門）──
-// 適用範圍：陽盤全系列（時家置閏／日／月／年盤），一般陰盤排除。
+// 適用範圍：陽盤全系列（時家置閏／日／月／年盤），一般陰盤排除（老師陰盤實測確認無此標記）。
 // 不算四害，純視覺標示，顏色比照「墓」字淡化處理。
 const GATE_SUPPRESS_TABLE = {
   '休門': [2, 8],
@@ -1513,6 +1547,8 @@ function renderGateHTML(gate, house) {
 
 function resetChart() {
   clearHighlight();
+  if (MING_PAN_MODE) exitMingPanMode();
+  applyPlateMode('yin');
   ['year','month','day','hour','minute'].forEach(id => {
     const el = document.getElementById(id);
     if (el) {
@@ -1524,7 +1560,7 @@ function resetChart() {
   if (msgEl) { msgEl.textContent = ''; msgEl.style.display = 'none'; }
   ['sy','sm','sd','st','ly','lm','ld','lt',
    'gz-y-gan','gz-y-zhi','gz-m-gan','gz-m-zhi','gz-d-gan','gz-d-zhi','gz-h-gan','gz-h-zhi',
-   'hb-qiju','hb-xun','hb-dutyStem','hb-voidBranches','hb-travel-horse','hb-zhifu','hb-zhishi'
+   'hb-qiju','hb-fuyin','hb-marker','hb-xun','hb-dutyStem','hb-voidBranches','hb-travel-horse','hb-zhifu','hb-zhishi','hb-yongshen'
   ].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.textContent = '—';
@@ -1744,9 +1780,12 @@ document.querySelectorAll('.cell[data-gong]').forEach(cell => {
     clearHighlight();
     clearChangsheng();
 
+    const yongshenEl = document.getElementById('hb-yongshen');
+
     if (nextIndex === -1) {
       _activeChangshengHouse = null;
       _activeChangshengIndex = -1;
+      if (yongshenEl) yongshenEl.textContent = '—';
       return;
     }
 
@@ -1756,6 +1795,7 @@ document.querySelectorAll('.cell[data-gong]').forEach(cell => {
     applyHouseHighlight(this);
     _activeChangshengHouse = this;
     _activeChangshengIndex = nextIndex;
+    if (yongshenEl) yongshenEl.textContent = chosen.stem;
   });
 });
 
@@ -1903,11 +1943,17 @@ function getYangChartNumber(y, m, d) {
   };
 }
 
-// 年盤／月盤局數：三元甲子公式（陽盤第三步以後流程與陰盤共用，局數本身另計，見下方函式）
+// ⚠️ 已淘汰：月盤原本是工具開發過程中類推套用9.2節氣表＋強制陰遁的假設（舊函式getYangChartNumberForcedYin，
+// 非老師教學內容——老師只教過陽盤第三步以後的流程骨架共用，未具體教授局數怎麼算），
+// 2026.08經8筆實測資料證實這套自訂假設方向錯誤，已改用下方getMonthWuXingJu（跟年盤同一套三元甲子邏輯，5年一區塊）。
 
-// 年盤：三元甲子＋180年循環，60年一區塊
+// 年盤專用：三元甲子局數表（2026.08 實測驗證，取代工具開發過程中原本套用9.2節氣表的自訂假設）
+// 依據：6筆比對資料（china95.net、tzchimen.com）橫跨1957-2026年，證實年家局數
+// 不是按9.2表逐日/逐節氣變動，而是套用玄空飛星「三元甲子」的60年區塊，每180年循環：
 //   上元：1864起 → 陰1局；中元：1924起 → 陰4局；下元：1984起 → 陰7局
-//   效力年份採八字年柱干支反推（立春校正），不用西元曆年或農曆正月初一；陰陽遁固定為陰遁。
+// 換元邊界已實測確認為1984年立春（1984/2/4癸亥年中元陰4局 → 1984/2/5甲子年下元陰7局），
+// 與排盤規則.md「年支須用節氣換年」原則一致，故效力年份（effectiveYear）採用八字年柱
+// 干支反推，不用西元曆年或農曆正月初一。陰陽遁固定為陰遁（此點原假設方向正確，未變動）。
 const SAN_YUAN_ANCHOR_YEAR = 1864; // 上元起始年（甲子，以立春為界）
 const SAN_YUAN_JU_BY_YUAN = [1, 4, 7]; // [上元, 中元, 下元] 對應局數
 function getEffectiveYearFromGanZhi(y, yearGZ) {
@@ -1922,7 +1968,9 @@ function getEffectiveYearFromGanZhi(y, yearGZ) {
   }
   return y; // 理論上不會走到這裡，僅防呆
 }
-// 支援範圍：1800年起。1800年以前公式仍會照常計算（純mod 180運算），標示為未驗證外推而非直接擋下。
+// 已驗證範圍：1800年起（2026.08用china95.net五組資料往回驗證確認，涵蓋1804年立春換元邊界）。
+// 1800年以前公式仍會照常計算（純mod 180運算，跟時盤那種鏈式模擬不同，沒有方向性限制），
+// 但缺乏比對資料，故標示為「未驗證外推」而非直接擋下。
 const SAN_YUAN_VERIFIED_FROM_YEAR = 1800;
 function getYearSanYuanJu(y, m, d, yearGZ) {
   const effectiveYear = getEffectiveYearFromGanZhi(y, yearGZ);
@@ -1936,10 +1984,15 @@ function getYearSanYuanJu(y, m, d, yearGZ) {
     isVerified: effectiveYear >= SAN_YUAN_VERIFIED_FROM_YEAR
   };
 }
-// 月盤：跟年盤同一套三元甲子邏輯，週期縮小為5年一區塊、15年一循環（60個月＝5年，跟年柱一樣是精確
-// 離散循環，不套用會浮動的節氣連續量，故不需要時盤那套超神接氣、置閏機制）。
-// effectiveYear沿用同一套立春校正反推，局數表也跟年盤共用同一張[1,4,7]，驗證範圍同年盤沿用
+// 月盤專用：跟年盤同一套「三元甲子」邏輯，只是週期縮小為5年一區塊、15年一循環（2026.08 實測驗證）
+// 依據：8筆比對資料（china95.net）橫跨1975-2029年，涵蓋上中下三元，逐項核對局數與china95顯示的
+// 「上/中/下元XX年」區塊起始年標籤，全數一致。這推翻的是工具開發過程中自訂的類推假設（「月盤跟時盤
+// 共用置閏邏輯」），不是老師教學內容——老師只教過陽盤第三步以後的流程骨架共用，未具體教過局數公式。
+// 月盤實際運作更接近年盤的縮小版：60個月＝5年（跟年干支60甲子循環一樣是精確離散系統，不套用會浮動
+// 的節氣連續量），故不需要時盤那套超神接氣、大雪/芒種置閏機制。effectiveYear沿用同一套立春校正反推
+// （見getEffectiveYearFromGanZhi），局數對照表也跟年盤共用同一張[1,4,7]，已驗證範圍同年盤沿用
 // SAN_YUAN_VERIFIED_FROM_YEAR（1800年起）。
+// 此函式取代原本的getYangChartNumberForcedYin(套9.2節氣表)作為月盤的正式邏輯。
 function getMonthWuXingJu(y, m, d, yearGZ) {
   const effectiveYear = getEffectiveYearFromGanZhi(y, yearGZ);
   const offset = ((effectiveYear - SAN_YUAN_ANCHOR_YEAR) % 15 + 15) % 15;
@@ -1952,34 +2005,30 @@ function getMonthWuXingJu(y, m, d, yearGZ) {
     isVerified: effectiveYear >= SAN_YUAN_VERIFIED_FROM_YEAR
   };
 }
-// ⚠️ 日盤實驗性公式，尚無實測資料驗證，不接入 castChart 正式流程
-// 推導邏輯：日柱跟月柱、年柱一樣是精確的60甲子離散循環，比照「1局＝該干支一輪甲子循環長度」的結構性
-// 規律，日盤應為60天一局、180天三元一輪，局數表沿用同一張[1,4,7]。陰陽遁借用時盤的節氣半年判定
-// （純看真實節氣落在冬至→芒種或夏至→大雪哪一半年，不涉及置閏鏈式模擬）。
-// 已知風險：60天區塊的錨點日期（上元第一天）尚無驗證資料，此處故意留白（anchorDateStr不傳時只回傳
-// 陰陽遁，chartNum為null），需要至少一組日盤實測資料才能反推出正確錨點。
-function getDayWuXingJuTrial(y, m, d, anchorDateStr) {
-  const dunInfo = getYangChartNumber(y, m, d); // 借用時盤的陰陽遁判定（節氣冬至/夏至半年切分）
-  const solsticeType = dunInfo ? dunInfo.solsticeType : null;
-  if (!anchorDateStr) {
-    return {
-      solsticeType,
-      chartNum: null,
-      _pendingAnchor: true,
-      _note: '骨架已完成（60天一局/180天三元，局數表沿用[1,4,7]），錨點日期尚未驗證。'
-    };
-  }
-  const anchor = new Date(anchorDateStr + 'T00:00:00Z');
+// 陽盤日盤：局數公式（2026.08 實測驗證，8組連續資料 2026/8/3–8/11，涵蓋甲辰旬→甲寅旬跨旬界）
+// 推翻的舊假設：①60天一局套年盤/月盤同一張[1,4,7]表 ②跟時盤共用9.2節氣表＋9.3置閏引擎
+// ③日本座山20天一局系統——三者皆與實測資料不符，詳見排盤規則.md 9.5節「已排除的候選假設」。
+// 正式公式：局數 = 9 − (n mod 9)，n＝目標日期相對於下方錨點的實際日曆天數差（不是60甲子循環內
+// 的位置——9不整除60，兩者不等價，必須用實際天數差才能算對）。
+// 8組資料逐一代入零誤差，且8/7→8/8跨旬界時局數平順遞減（5→4）無斷點，證實局數是純日柱線性函式、
+// 跟旬別無關，屬於跟月柱/年柱同性質的離散精確循環（不套用置閏，見9.1結構性原理）。
+// 錨點：2026-08-03（日柱己酉，實測起局陰9局，即 n mod 9 = 0）。
+// ⚠️ 陰陽遁尚未定案，此處暫套用「假設2」：借用時盤getYangChartNumber()的節氣冬至/夏至半年判定
+// （比照2.1節通用規則），與「固定陰遁」假設（比照年盤/月盤9.4節）在冬至後夏至前的資料出現前
+// 無法區分——8組現有資料全落在大暑～處暑（夏至後冬至前），兩假設在此區間預測結果相同。
+// 需要冬至後、夏至前的實測資料才能確認，詳見排盤規則.md 9.5節。
+const DAY_JU_ANCHOR = new Date(Date.UTC(2026, 7, 3)); // 2026-08-03，日柱己酉，n mod 9 = 0（陰9局）
+function getDayJu(y, m, d) {
+  const dunInfo = getYangChartNumber(y, m, d); // 陰陽遁借用時盤節氣判定（假設2，待驗證，見上方註解）
+  if (!dunInfo) return null; // 早於時盤已驗證錨點(1899-12-22)，陰陽遁無法判定，比照時盤擋下
   const target = new Date(Date.UTC(y, m - 1, d));
-  const diffDays = Math.round((target - anchor) / 86400000);
-  const offset = ((diffDays % 180) + 180) % 180;
-  const blockIndex = Math.floor(offset / 60); // 0=上元, 1=中元, 2=下元（60天一區塊）
+  const diffDays = Math.round((target - DAY_JU_ANCHOR) / 86400000);
+  const nMod9 = ((diffDays % 9) + 9) % 9;
   return {
-    solsticeType,
-    chartNum: SAN_YUAN_JU_BY_YUAN[blockIndex],
-    yuanName: ['上元', '中元', '下元'][blockIndex],
-    _experimental: true,
-    _note: '未經驗證，不接入正式日盤流程'
+    solsticeType: dunInfo.solsticeType,
+    chartNum: 9 - nMod9,
+    _dunAssumption: 2, // 標記目前陰陽遁採用假設2，尚未實測確認
+    _note: '局數公式已驗證（2026.08，8組實測資料），陰陽遁規則暫套用假設2（借用節氣冬至/夏至判定），尚未實測確認'
   };
 }
 // ==================== 陽盤引擎結束 ====================
@@ -2337,6 +2386,8 @@ function castChart() {
   clearChangsheng();
   clearHighlight();
   document.querySelectorAll('.gc-tian .stem-active, .gc-shen .stem-active').forEach(s => s.classList.remove('stem-active'));
+  const yongshenResetEl = document.getElementById('hb-yongshen');
+  if (yongshenResetEl) yongshenResetEl.textContent = '—';
 
   // 子時跨日：23:00-23:59 屬於隔日子時，農曆換算需 +1 天，時辰改為 0
   let lunarD = d, lunarM = m, lunarY = y, lunarH = h;
@@ -2393,19 +2444,23 @@ function castChart() {
   // 陰陽遁 + 局數
   let solsticeType, chartNum, yangInfo = null;
   if (PLATE_MODE === 'yang') {
-    // 年盤／月盤：改用三元甲子公式（見 getYearSanYuanJu／getMonthWuXingJu 註解）；
+    // 年盤／月盤：改用三元甲子公式（2026.08實測驗證，見 getYearSanYuanJu／getMonthWuXingJu 註解）；
     // 時盤：維持沿用9.2節氣表＋9.3置閏引擎
     if (PLATE_SUBMODE === 'year') {
       yangInfo = getYearSanYuanJu(y, m, d, yGZ); // 純mod 180公式，無方向性限制，任何年份皆可算
     } else if (PLATE_SUBMODE === 'month') {
       yangInfo = getMonthWuXingJu(y, m, d, yGZ); // 純mod 15公式，同上
+    } else if (PLATE_SUBMODE === 'day') {
+      yangInfo = getDayJu(y, m, d); // 純日柱線性公式（2026.08驗證），陰陽遁暫借時盤節氣判定（假設2，待驗證）
     } else {
       yangInfo = getYangChartNumber(y, m, d); // 時盤：鏈式模擬，僅能從1899-12-22正授錨點往後算
     }
     if (!yangInfo) {
       const msgEl = document.getElementById('input-error-msg');
       if (msgEl) {
-        msgEl.textContent = '此日期早於陽盤時家(置閏)已驗證錨點範圍（1899-12-22），暫不支援排盤';
+        msgEl.textContent = PLATE_SUBMODE === 'day'
+          ? '此日期早於已驗證陰陽遁判定錨點範圍（1899-12-22），暫不支援日盤排盤'
+          : '此日期早於陽盤時家(置閏)已驗證錨點範圍（1899-12-22），暫不支援排盤';
         msgEl.style.display = 'block';
       }
       return;
@@ -2430,7 +2485,7 @@ function castChart() {
   // 旬首 / 符頭 / 空亡
   const decInfo = getDecInfo(effGZ[0], effGZ[1]);
   if (decInfo) {
-    document.getElementById('hb-xun').textContent = decInfo.xun;
+    document.getElementById('hb-xun').textContent = decInfo.xun.replace('旬', '');
     document.getElementById('hb-dutyStem').textContent = decInfo.dutyStem;
     document.getElementById('hb-voidBranches').textContent = decInfo.voidBranches.join('、');
 
@@ -2507,28 +2562,33 @@ function castChart() {
             : { guidingMap: {}, isStarFrozen: false, isGateFrozen: false, isStarReversed: false };
           const hidingStemMap = guidingResult.guidingMap;
 
-          // 伏吟/反吟標記顯示：有伏吟顯示星伏／門伏（標紅）；有反吟顯示星反（標紅）；無則顯示陰盤
-          // 命盤模式下改顯示男命/女命，特殊標記則用「・」接在後面（如「女命・星反」）
+          // 排盤：單純顯示陰盤/陽盤/命盤（最外層模式本身）
+          // 標記：其餘細節（時家置閏/日家/月家/年家、男命/女命）＋伏吟反吟（星伏／門伏／星反／門反，標紅）都放這裡，可以塞一筆以上的資料
           const fuyinEl = document.getElementById('hb-fuyin');
+          const markerEl = document.getElementById('hb-marker');
+          const fuyinLabels = [];
+          if (guidingResult.isStarFrozen) fuyinLabels.push('星伏');
+          if (guidingResult.isGateFrozen) fuyinLabels.push('門伏');
+          if (isStarReversed) fuyinLabels.push('星反');
+          if (isGateReversed) fuyinLabels.push('門反');
           if (fuyinEl) {
-            const labels = [];
-            if (guidingResult.isStarFrozen) labels.push('星伏');
-            if (guidingResult.isGateFrozen) labels.push('門伏');
-            if (isStarReversed) labels.push('星反');
-            if (isGateReversed) labels.push('門反');
+            fuyinEl.textContent = MING_PAN_MODE ? '命盤' : (PLATE_MODE === 'yang' ? '陽盤' : '陰盤');
+          }
+          if (markerEl) {
+            const detailParts = [];
             if (MING_PAN_MODE) {
-              const genderText = MING_PAN_GENDER === 'male' ? '男命' : '女命';
-              fuyinEl.textContent = labels.length ? (genderText + '・' + labels.join('')) : genderText;
-              fuyinEl.style.color = labels.length ? '#c0392b' : '';
-            } else if (labels.length) {
-              fuyinEl.textContent = labels.join('');
-              fuyinEl.style.color = '#c0392b';
-            } else {
-              fuyinEl.textContent = PLATE_MODE === 'yang'
-                ? ('陽盤・' + ({time:'時家',day:'日家',month:'月家',year:'年家'}[PLATE_SUBMODE] || '時家'))
-                : '陰盤';
-              fuyinEl.style.color = '';
+              detailParts.push('時家置閏');
+              detailParts.push(MING_PAN_GENDER === 'male' ? '男命' : '女命');
+            } else if (PLATE_MODE === 'yang') {
+              // 日家局數公式已驗證，但陰陽遁規則仍是假設2（借用節氣冬至/夏至判定），未實測確認前於標記欄位加註提醒
+              detailParts.push({time:'時家置閏',day:'日家（遁待驗證）',month:'月家',year:'年家'}[PLATE_SUBMODE] || '時家置閏');
             }
+            let html = detailParts.join('、');
+            if (fuyinLabels.length) {
+              const markerSpan = '<span style="color:#c0392b">' + fuyinLabels.join('') + '</span>';
+              html = html ? (html + '，' + markerSpan) : markerSpan;
+            }
+            markerEl.innerHTML = html || '—';
           }
 
           [1,2,3,4,6,7,8,9].forEach(g => {
@@ -2551,7 +2611,7 @@ function castChart() {
               const isDutyHouse = String(g) === String(dutyStemHouse);
               diEl.innerHTML = renderStemHTML(earthStemMap[g] || '', g, decInfo.dutyStem, isDutyHouse);
             }
-            // 引干（不判定四害）——僅陰盤與陽盤時盤顯示；陽盤日/月/年盤本來就不顯示引干
+            // 引干（不判定四害）——僅陰盤與陽盤時盤顯示；陽盤日/月/年盤經老師的排盤工具比對確認本來就不顯示引干（非待確認事項）
             const showGuidingStem = !(PLATE_MODE === 'yang' && PLATE_SUBMODE !== 'time');
             if (yinEl) {
               const val = showGuidingStem ? (hidingStemMap[g] || '') : '';
