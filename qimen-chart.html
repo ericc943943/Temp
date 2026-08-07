@@ -942,7 +942,7 @@
   .travel-inline-exit:active, .travel-inline-locate:active { background: #eee; }
 
   /* 地圖模式：九宮格線（.cell 邊框）與 r1c1 宮位標籤留在畫面上，其餘內容透明化／隱藏，讓地圖從縫間透出 */
-  .outer.travel-map-mode .grid { position: relative; z-index: 1; }
+  .outer.travel-map-mode .grid { position: relative; z-index: 1; pointer-events: none; }
   .outer.travel-map-mode .cell { background: transparent; }
   .outer.travel-map-mode .gc-shen,
   .outer.travel-map-mode .gc-star,
