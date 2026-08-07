@@ -323,6 +323,7 @@
   }
   .travel-mark-label.mark-lucky   { color: #b8860b; }
   .travel-mark-label.mark-unlucky { color: #333; }
+  .travel-mark-label.mark-placeholder { color: #bbb; font-weight: normal; font-size: 10px; }
 
   /* ── 左下（馬）── */
   .gc-horse {
@@ -923,6 +924,40 @@
   }
   .travel-marking-confirm { background: #2e7d32; color: #fff; }
   .travel-marking-cancel  { background: #eee; color: #555; }
+
+  /* ══════════════════════════════════
+     出行訣 階段二 2a：方框內嵌地圖
+     .outer 本身固定在原九宮框範圍內；地圖填滿整個 .outer，九宮格線／r1c1標籤疊在地圖之上。
+  ══════════════════════════════════ */
+  .travel-inline-map-wrap { position: absolute; inset: 0; z-index: 0; border-radius: 12px; overflow: hidden; }
+  .travel-inline-map { position: absolute; inset: 0; transform: rotate(180deg); /* 預設南上北下，配合盤面慣例；旋轉按鈕（2b）會轉回北上南下 */ }
+  .travel-inline-exit, .travel-inline-locate {
+    position: absolute; z-index: 2; width: 30px; height: 30px; border-radius: 50%;
+    border: none; background: rgba(255,255,255,.92); color: #333;
+    font-size: 15px; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,.2);
+  }
+  .travel-inline-exit   { top: 8px; left: 8px; }
+  .travel-inline-locate { bottom: 8px; right: 8px; color: #2471a3; }
+  .travel-inline-exit:active, .travel-inline-locate:active { background: #eee; }
+
+  /* 地圖模式：九宮格線（.cell 邊框）與 r1c1 宮位標籤留在畫面上，其餘內容透明化／隱藏，讓地圖從縫間透出 */
+  .outer.travel-map-mode .grid { position: relative; z-index: 1; }
+  .outer.travel-map-mode .cell { background: transparent; }
+  .outer.travel-map-mode .gc-shen,
+  .outer.travel-map-mode .gc-star,
+  .outer.travel-map-mode .gc-gate,
+  .outer.travel-map-mode .gc-void,
+  .outer.travel-map-mode .gc-tian,
+  .outer.travel-map-mode .gc-horse,
+  .outer.travel-map-mode .gc-di,
+  .outer.travel-map-mode .gc-left2,
+  .outer.travel-map-mode .gc-center {
+    visibility: hidden; /* 中宮（含指南針、地支時鐘）在地圖模式下整格隱藏，該位置留給地圖中心的定位點 */
+  }
+  .outer.travel-map-mode .gc-left {
+    background: rgba(255,255,255,.74); border-radius: 0 0 8px 0;
+  }
 </style>
 </head>
 <body>
@@ -1092,7 +1127,7 @@
   </div>
 </div>
 
-<div class="outer">
+<div class="outer" id="outer-board">
 
   <div class="yigan yigan-top"    id="yin-9"></div>
   <div class="yigan yigan-bottom" id="yin-1"></div>
@@ -1115,6 +1150,13 @@
   <div class="yigan mingpan-label rg-left-b"   id="mp-left-b"   style="display:none;"></div>
   <div class="yigan mingpan-label rg-left-c"   id="mp-left-c"   style="display:none;"></div>
   <div class="yigan mingpan-label rg-left-t"   id="mp-left-t"   style="display:none;"></div>
+
+  <!-- 出行訣 階段二 2a：方框內嵌地圖。z-index 低於 .grid，透過 .cell 背景透明讓地圖從九宮線縫間透出 -->
+  <div class="travel-inline-map-wrap" id="travel-inline-map-wrap" style="display:none;">
+    <div class="travel-inline-map" id="travel-inline-map"></div>
+    <button type="button" class="travel-inline-exit" id="travel-inline-exit" aria-label="返回盤面">←</button>
+    <button type="button" class="travel-inline-locate" id="travel-inline-locate" aria-label="拉回目前位置">◎</button>
+  </div>
 
   <div class="grid">
     <!-- 4 巽 -->
@@ -1695,10 +1737,16 @@ function renderTravelMark(house) {
   const el = document.getElementById('travel-mark-' + house);
   if (!el) return;
   const v = travelMarks[house];
-  el.textContent = v || '';
-  el.classList.remove('mark-lucky', 'mark-unlucky');
-  if (v === '吉') el.classList.add('mark-lucky');
-  if (v === '凶') el.classList.add('mark-unlucky');
+  el.classList.remove('mark-lucky', 'mark-unlucky', 'mark-placeholder');
+  if (v) {
+    el.textContent = v;
+    el.classList.add(v === '吉' ? 'mark-lucky' : 'mark-unlucky');
+  } else if (travelMarkingActive) {
+    el.textContent = '吉/凶'; // 未標記時的淡灰提示字，讓使用者知道這裡可以點
+    el.classList.add('mark-placeholder');
+  } else {
+    el.textContent = '';
+  }
 }
 
 // 三態循環：未標記 → 吉 → 凶 → 未標記，手感同天盤天干點擊十二長生
@@ -1745,11 +1793,12 @@ function cancelTravelMarking() {
   exitTravelMarkingModeUI();
 }
 
-// 確認：階段一收尾在這裡，travelMarks 已備妥，階段二（地圖載入）會接手讀取這份資料
+// 確認：階段一收尾在這裡，travelMarks 已備妥；階段二接手，直接轉入方框地圖模式
 function confirmTravelMarking() {
   if (!travelMarkingActive) return;
   exitTravelMarkingModeUI();
   console.log('出行訣吉凶標記已確認：', travelMarks);
+  enterTravelMapMode();
 }
 
 TRAVEL_MARK_HOUSES.forEach(h => {
@@ -1762,6 +1811,69 @@ TRAVEL_MARK_HOUSES.forEach(h => {
     });
   }
 });
+
+// ══════════════════════════════════
+// 出行訣 階段二 2a：方框內嵌地圖（confirmTravelMarking 收尾後觸發，固定在原九宮框範圍內）
+// ══════════════════════════════════
+let inlineTravelMap = null;
+let inlineTravelPositionMarker = null;
+
+function initializeInlineTravelMap() {
+  if (inlineTravelMap || typeof L === 'undefined') return;
+  // 未取得定位前維持中性世界視角；不可預設任何國家或地區
+  inlineTravelMap = L.map('travel-inline-map', { zoomControl: false, attributionControl: false }).setView([20, 0], 2);
+  L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+    maxZoom: 20,
+    subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+    attribution: 'Map data © Google'
+  }).addTo(inlineTravelMap);
+}
+
+function locateInlineTravelPosition(forceZoom) {
+  if (forceZoom === undefined) forceZoom = true;
+  if (!inlineTravelMap || !navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(function(position) {
+    const latLng = [position.coords.latitude, position.coords.longitude];
+    if (inlineTravelPositionMarker) inlineTravelMap.removeLayer(inlineTravelPositionMarker);
+    inlineTravelPositionMarker = L.circleMarker(latLng, { radius: 7, color: '#2471a3', fillColor: '#2471a3', fillOpacity: 1, weight: 2 }).addTo(inlineTravelMap);
+    if (forceZoom) {
+      inlineTravelMap.setView(latLng, 16);
+    } else {
+      inlineTravelMap.panTo(latLng); // 拉回按鈕專用：只平移，不更動使用者手動調整過的縮放比例
+    }
+  }, function() {
+    // 定位失敗：維持中性世界視角，不阻斷畫面
+  }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+}
+
+function recenterInlineTravelPosition() {
+  locateInlineTravelPosition(false);
+}
+
+function enterTravelMapMode() {
+  const outer = document.getElementById('outer-board');
+  const wrap = document.getElementById('travel-inline-map-wrap');
+  if (!outer || !wrap) return;
+  outer.classList.add('travel-map-mode');
+  wrap.style.display = '';
+  initializeInlineTravelMap();
+  // wrap 剛從 display:none 切換出來，Leaflet 量測容器尺寸需等下一輪事件循環才準確
+  setTimeout(function() {
+    if (inlineTravelMap) inlineTravelMap.invalidateSize();
+    locateInlineTravelPosition(true);
+  }, 0);
+}
+
+function exitTravelMapMode() {
+  const outer = document.getElementById('outer-board');
+  const wrap = document.getElementById('travel-inline-map-wrap');
+  if (!outer || !wrap) return;
+  outer.classList.remove('travel-map-mode');
+  wrap.style.display = 'none';
+}
+
+document.getElementById('travel-inline-exit').addEventListener('click', exitTravelMapMode);
+document.getElementById('travel-inline-locate').addEventListener('click', function() { recenterInlineTravelPosition(); });
 
 // ── 門迫判定 ──
 // ══════════════════════════════════
