@@ -976,9 +976,8 @@
   .outer.travel-map-mode.board-visible .yigan {
     visibility: visible;
   }
-  .outer.travel-map-mode .gc-center .dz9,
-  .outer.travel-map-mode .gc-center .dz-center {
-    visibility: hidden;
+  .outer.travel-map-mode .gc-center .dz9 {
+    visibility: hidden; /* 地支時鐘文字地圖模式用不到；指針(.dz-center)則保留顯示，見下方「指針」區塊 */
   }
   /* 中宮內部本來還有一圈#ccc細格線（地支時鐘的分格線），地圖模式下一併拿掉，只留外框（外框走ID選擇器，優先度較高不受影響） */
   .outer.travel-map-mode .gc-center {
@@ -988,6 +987,10 @@
   .outer.travel-map-mode .gc-left {
     background: rgba(255,255,255,.74); border-radius: 0 0 8px 0;
   }
+  /* 指針(.dz-center)在地圖模式下維持顯示，充當「目前位置」標記（取代原本 Leaflet 藍點），
+     且改為跟著九宮方位固定（見 JS setTravelCompassOrientation／travelCompassFrozen），不再跟即時裝置朝向連動；
+     只有點旋轉鈕時才連動翻轉。過渡時間拉長跟地圖的 0.5s 同步，翻轉手感一致。 */
+  .outer.travel-map-mode .compass-ring { transition: transform .5s ease; }
 
   /* 盤面顯示/隱藏：點右上角「盤」鈕切換，半透明疊加在地圖上方，固定在同一塊九宮框內，不出框 */
   .outer.travel-map-mode.board-visible .cell {
@@ -1001,8 +1004,7 @@
   .outer.travel-map-mode.board-visible .gc-horse,
   .outer.travel-map-mode.board-visible .gc-di,
   .outer.travel-map-mode.board-visible .gc-left2,
-  .outer.travel-map-mode.board-visible .gc-center .dz9,
-  .outer.travel-map-mode.board-visible .gc-center .dz-center {
+  .outer.travel-map-mode.board-visible .gc-center .dz9 {
     visibility: visible;
   }
 </style>
@@ -1720,6 +1722,7 @@ function captureChart() {
   }
 
   function handleOrientation(e) {
+    if (travelCompassFrozen) return; // 出行訣地圖模式期間指針凍結，改由 setTravelCompassOrientation 固定控制，不套用即時朝向
     let heading = null;
     if (typeof e.webkitCompassHeading === 'number') {
       // iOS：webkitCompassHeading 已經是真實方位角，數值越準確
@@ -1871,7 +1874,6 @@ TRAVEL_MARK_HOUSES.forEach(h => {
 // 出行訣 階段二 2a：方框內嵌地圖（confirmTravelMarking 收尾後觸發，固定在原九宮框範圍內）
 // ══════════════════════════════════
 let inlineTravelMap = null;
-let inlineTravelPositionMarker = null;
 
 function initializeInlineTravelMap() {
   if (inlineTravelMap || typeof L === 'undefined') return;
@@ -1891,8 +1893,8 @@ function locateInlineTravelPosition(forceZoom) {
   if (!inlineTravelMap || !navigator.geolocation) return;
   navigator.geolocation.getCurrentPosition(function(position) {
     const latLng = [position.coords.latitude, position.coords.longitude];
-    if (inlineTravelPositionMarker) inlineTravelMap.removeLayer(inlineTravelPositionMarker);
-    inlineTravelPositionMarker = L.circleMarker(latLng, { radius: 7, color: '#2471a3', fillColor: '#2471a3', fillOpacity: 1, weight: 2 }).addTo(inlineTravelMap);
+    // 不再另外放藍點標記——中宮指針(.dz-center)固定在畫面正中央，跟地圖置中後的座標點重疊，
+    // 指針本身就是「目前位置」標記，藍點會是多餘的視覺重複
     if (forceZoom) {
       inlineTravelMap.setView(latLng, 16);
     } else {
@@ -1907,6 +1909,17 @@ function recenterInlineTravelPosition() {
   locateInlineTravelPosition(false);
 }
 
+// 指針凍結旗標：出行訣地圖模式期間指針改跟九宮方位固定，不跟即時裝置朝向連動；
+// 供下方指南針 IIFE 的 handleOrientation 讀取判斷是否要略過這次即時朝向更新。
+let travelCompassFrozen = false;
+
+// 指針固定朝向：rotated=false（預設南上北下）→ rotate(0deg)（S在上，即指針原始未旋轉狀態，本就對準南）；
+// rotated=true（旋轉鈕轉正後、北上南下）→ rotate(180deg)（翻面，N在上）
+function setTravelCompassOrientation(rotated) {
+  const ring = document.getElementById('compassRing');
+  if (ring) ring.style.transform = rotated ? 'rotate(180deg)' : 'rotate(0deg)';
+}
+
 function enterTravelMapMode() {
   const outer = document.getElementById('outer-board');
   const wrap = document.getElementById('travel-inline-map-wrap');
@@ -1914,6 +1927,9 @@ function enterTravelMapMode() {
   outer.classList.add('travel-map-mode');
   wrap.style.display = '';
   initializeInlineTravelMap();
+  // 指針凍結：地圖模式期間指針不跟即時裝置朝向連動，改固定跟著九宮方位（見 setTravelCompassOrientation）
+  travelCompassFrozen = true;
+  setTravelCompassOrientation(travelMapRotated);
   // wrap 剛從 display:none 切換出來，Leaflet 量測容器尺寸需等下一輪事件循環才準確
   setTimeout(function() {
     if (inlineTravelMap) inlineTravelMap.invalidateSize();
@@ -1930,6 +1946,7 @@ function exitTravelMapMode() {
   outer.classList.remove('board-visible');
   document.getElementById('travel-inline-board-toggle').classList.remove('active');
   wrap.style.display = 'none';
+  travelCompassFrozen = false; // 解凍，指針恢復跟隨即時裝置朝向（若羅盤本來就是啟用狀態，下一個朝向事件會自動接手）
 }
 
 function toggleTravelBoardOverlay() {
@@ -1985,6 +2002,8 @@ function toggleTravelMapRotate() {
   swapTravelHousePair(9, 1);
   swapTravelHousePair(2, 8);
   swapTravelHousePair(7, 3);
+  // 指針跟著同步翻面（凍結狀態下才有意義；地圖模式外呼叫此函式的路徑目前不存在，此行為安全）
+  setTravelCompassOrientation(travelMapRotated);
 }
 
 document.getElementById('travel-inline-exit').addEventListener('click', exitTravelMapMode);
