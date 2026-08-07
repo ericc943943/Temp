@@ -931,15 +931,17 @@
   ══════════════════════════════════ */
   .travel-inline-map-wrap { position: absolute; inset: 0; z-index: 0; border-radius: 12px; overflow: hidden; }
   .travel-inline-map { position: absolute; inset: 0; transform: rotate(180deg); /* 預設南上北下，配合盤面慣例；旋轉按鈕（2b）會轉回北上南下 */ }
-  .travel-inline-exit, .travel-inline-locate {
+  .travel-inline-exit, .travel-inline-locate, .travel-inline-board-toggle {
     position: absolute; z-index: 2; width: 30px; height: 30px; border-radius: 50%;
     border: none; background: rgba(255,255,255,.92); color: #333;
     font-size: 15px; display: flex; align-items: center; justify-content: center;
     box-shadow: 0 2px 6px rgba(0,0,0,.2);
   }
   .travel-inline-exit   { top: 8px; left: 8px; }
+  .travel-inline-board-toggle { top: 8px; right: 8px; font-size: 12px; }
+  .travel-inline-board-toggle.active { background: #2471a3; color: #fff; }
   .travel-inline-locate { bottom: 8px; right: 8px; color: #2471a3; }
-  .travel-inline-exit:active, .travel-inline-locate:active { background: #eee; }
+  .travel-inline-exit:active, .travel-inline-locate:active, .travel-inline-board-toggle:active { opacity: .85; }
 
   /* 地圖模式：九宮格線（.cell 邊框）與 r1c1 宮位標籤留在畫面上，其餘內容透明化／隱藏，讓地圖從縫間透出 */
   .outer.travel-map-mode .grid { position: relative; z-index: 1; pointer-events: none; }
@@ -951,12 +953,34 @@
   .outer.travel-map-mode .gc-tian,
   .outer.travel-map-mode .gc-horse,
   .outer.travel-map-mode .gc-di,
-  .outer.travel-map-mode .gc-left2,
-  .outer.travel-map-mode .gc-center {
-    visibility: hidden; /* 中宮（含指南針、地支時鐘）在地圖模式下整格隱藏，該位置留給地圖中心的定位點 */
+  .outer.travel-map-mode .gc-left2 {
+    visibility: hidden;
+  }
+  /* 中宮比較特殊：.cell.center 本身 border:none，外框線是靠中宮內部 9 個小格(.gc-center)各自的邊框拼出來的，
+     所以中宮不能整格 visibility:hidden（會連邊框一起藏掉），只藏裡面的內容（地支時鐘、指南針） */
+  .outer.travel-map-mode .gc-center .dz9,
+  .outer.travel-map-mode .gc-center .dz-center {
+    visibility: hidden;
   }
   .outer.travel-map-mode .gc-left {
     background: rgba(255,255,255,.74); border-radius: 0 0 8px 0;
+  }
+
+  /* 盤面顯示/隱藏：點右上角「盤」鈕切換，半透明疊加在地圖上方，固定在同一塊九宮框內，不出框 */
+  .outer.travel-map-mode.board-visible .cell {
+    background: rgba(255,255,255,.82);
+  }
+  .outer.travel-map-mode.board-visible .gc-shen,
+  .outer.travel-map-mode.board-visible .gc-star,
+  .outer.travel-map-mode.board-visible .gc-gate,
+  .outer.travel-map-mode.board-visible .gc-void,
+  .outer.travel-map-mode.board-visible .gc-tian,
+  .outer.travel-map-mode.board-visible .gc-horse,
+  .outer.travel-map-mode.board-visible .gc-di,
+  .outer.travel-map-mode.board-visible .gc-left2,
+  .outer.travel-map-mode.board-visible .gc-center .dz9,
+  .outer.travel-map-mode.board-visible .gc-center .dz-center {
+    visibility: visible;
   }
 </style>
 </head>
@@ -1155,6 +1179,7 @@
   <div class="travel-inline-map-wrap" id="travel-inline-map-wrap" style="display:none;">
     <div class="travel-inline-map" id="travel-inline-map"></div>
     <button type="button" class="travel-inline-exit" id="travel-inline-exit" aria-label="返回盤面">←</button>
+    <button type="button" class="travel-inline-board-toggle" id="travel-inline-board-toggle" aria-label="顯示/隱藏盤面">盤</button>
     <button type="button" class="travel-inline-locate" id="travel-inline-locate" aria-label="拉回目前位置">◎</button>
   </div>
 
@@ -1871,11 +1896,22 @@ function exitTravelMapMode() {
   const wrap = document.getElementById('travel-inline-map-wrap');
   if (!outer || !wrap) return;
   outer.classList.remove('travel-map-mode');
+  outer.classList.remove('board-visible');
+  document.getElementById('travel-inline-board-toggle').classList.remove('active');
   wrap.style.display = 'none';
+}
+
+function toggleTravelBoardOverlay() {
+  const outer = document.getElementById('outer-board');
+  const btn = document.getElementById('travel-inline-board-toggle');
+  if (!outer) return;
+  const isVisible = outer.classList.toggle('board-visible');
+  if (btn) btn.classList.toggle('active', isVisible);
 }
 
 document.getElementById('travel-inline-exit').addEventListener('click', exitTravelMapMode);
 document.getElementById('travel-inline-locate').addEventListener('click', function() { recenterInlineTravelPosition(); });
+document.getElementById('travel-inline-board-toggle').addEventListener('click', toggleTravelBoardOverlay);
 
 // ── 門迫判定 ──
 // ══════════════════════════════════
