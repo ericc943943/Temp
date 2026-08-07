@@ -872,8 +872,10 @@
   /* pointer-events:none：盤面搬進出行羅盤疊層後純粹是過場視覺用，opacity 淡出後底層不可再被誤觸（原本 pointer-events:auto 會讓十二長生等互動在地圖模式下被意外觸發）。 */
   .travel-board-layer .outer { width: min(82vmin, 520px); margin: 0; pointer-events: none; transition: opacity .22s ease, transform .26s ease; }
   .travel-overlay.is-opening .travel-board-layer .outer { opacity: 0; transform: scale(.88); }
-  .travel-compass { position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0; transform: scale(.82); transition: opacity .28s ease .11s, transform .34s ease .11s; }
-  .travel-overlay.is-open .travel-compass { opacity: 1; transform: scale(1); }
+  .travel-compass { position: absolute; z-index: 3; left: 50%; top: 50%; display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0; transform: translate(-50%,-50%) scale(.82); transition: opacity .28s ease .11s, transform .34s ease .11s, left .2s ease, top .2s ease; }
+  .travel-overlay.is-open .travel-compass { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+  /* 錨定拖曳中：拿掉 left/top 的 transition，才能即時跟手不delay */
+  .travel-compass.anchor-dragging { transition: opacity .28s ease .11s, transform .34s ease .11s; }
   /* 用 vmax（螢幕長邊）作為基準，橫向裝置放大時才會覆蓋左右與四角。 */
   .travel-compass-disc { width: var(--travel-compass-size, 88vmax); height: var(--travel-compass-size, 88vmax); flex: 0 0 auto; max-width: none; max-height: none; transition: transform .08s linear; }
   .travel-compass-disc .travel-compass-gua,
@@ -899,11 +901,11 @@
   .travel-compass-dot { font-size: 8px; stroke: rgba(255,255,255,.9); stroke-width: 2px; }
   /* 吉凶標記：金＝吉。凶原本用深灰／近黑，但文字底色現在統一改黑字了，凶再用黑會跟平常沒標記的字混在一起分不出來，
      改用跟盤面其他警示色（門迫／擊刑）同一套的紅色，才能跟預設黑字明顯區分 */
-  .travel-compass-gua.mark-lucky,   .travel-compass-dir.mark-lucky   { fill: #FFB700; stroke: #fff; stroke-width: 3.5px; }
-  .travel-compass-gua.mark-unlucky, .travel-compass-dir.mark-unlucky { fill: #c0392b; stroke: #fff; stroke-width: 3.5px; }
+  .travel-compass-gua.mark-lucky,   .travel-compass-dir.mark-lucky,   .travel-compass-dot.mark-lucky   { fill: #FFB700; stroke: #fff; stroke-width: 3.5px; }
+  .travel-compass-gua.mark-unlucky, .travel-compass-dir.mark-unlucky, .travel-compass-dot.mark-unlucky { fill: #c0392b; stroke: #fff; stroke-width: 3.5px; }
   /* 光暈感：疊兩層 drop-shadow（貼近的窄光＋外圍的散光），用 currentColor 自動跟著金/紅走 */
-  .travel-compass-gua.mark-lucky,   .travel-compass-dir.mark-lucky,
-  .travel-compass-gua.mark-unlucky, .travel-compass-dir.mark-unlucky {
+  .travel-compass-gua.mark-lucky,   .travel-compass-dir.mark-lucky,   .travel-compass-dot.mark-lucky,
+  .travel-compass-gua.mark-unlucky, .travel-compass-dir.mark-unlucky, .travel-compass-dot.mark-unlucky {
     filter: drop-shadow(0 0 1.5px currentColor) drop-shadow(0 0 4px currentColor);
   }
   .travel-toolbar { position: absolute; z-index: 4; top: max(12px, env(safe-area-inset-top)); left: 12px; right: 12px; display: flex; justify-content: space-between; gap: 8px; pointer-events: none; }
@@ -919,6 +921,21 @@
   /* 回到目前位置按鈕：仿 Google Map 那種圓形箭頭浮動按鈕，放左下角避開右側的羅盤大小面板 */
   .travel-locate-btn { position: absolute; z-index: 4; left: 12px; bottom: max(18px, env(safe-area-inset-bottom)); width: 44px; height: 44px; border-radius: 50%; border: none; background: rgba(255,255,255,.94); color: #2471a3; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,.18); pointer-events: auto; }
   .travel-locate-btn:active { background: #eee; }
+  /* 圓心錨定：工具列的開關鈕（手動決定要不要開啟，預設關閉），以及開啟後顯示的拖曳手把 */
+  .travel-toolbar button.active { background: #2471a3; color: #fff; }
+  .travel-anchor-handle {
+    position: absolute; display: none;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: rgba(255,255,255,.92); border: 2.5px solid #d32f2f;
+    transform: translate(-50%, -50%);
+    z-index: 6; pointer-events: auto; cursor: grab;
+    box-shadow: 0 2px 8px rgba(0,0,0,.38);
+  }
+  .travel-anchor-handle:active { cursor: grabbing; }
+  .travel-anchor-handle::after {
+    content: '✥'; position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -48%); font-size: 13px; color: #d32f2f; line-height: 1; pointer-events: none;
+  }
 
   /* ══════════════════════════════════
      出行訣 階段一：吉凶標記模式的詢問面板／頂部提示列（皆為面板內展開的確認 UI，不使用原生 confirm()）
@@ -1497,12 +1514,14 @@
       <circle class="travel-compass-center" cx="100" cy="100" r="3" fill="rgba(255,255,255,.9)"/>
     </svg>
   </div>
-  <div class="travel-toolbar"><button type="button" onclick="closeTravelMode()">← 返回盤面</button><div class="travel-status" id="travel-status">載入地圖與定位中…</div></div>
+  <div class="travel-toolbar"><button type="button" onclick="closeTravelMode()">← 返回盤面</button><div class="travel-status" id="travel-status">載入地圖與定位中…</div><button type="button" id="travel-anchor-toggle" onclick="toggleTravelAnchor()" aria-label="錨定圓心於地圖座標" title="錨定圓心於地圖座標">⚓</button></div>
   <div class="travel-size-control"><label for="travel-size-range">羅盤大小 <span id="travel-size-value">88%</span></label><input id="travel-size-range" type="range" min="45" max="500" value="88" aria-label="調整羅盤大小"></div>
   <div class="travel-orientation-card" id="travel-orientation-card"><span>啟用羅盤，讓方位圖跟著手機朝向轉動</span><button type="button" id="travel-orientation-btn">啟用</button></div>
   <button type="button" class="travel-locate-btn" aria-label="回到目前位置" onclick="recenterTravelPosition()">
     <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2 L19 21 L12 17 L5 21 Z"/></svg>
   </button>
+  <!-- 圓心錨定：拖曳手把，必須跟 .travel-compass 分開放（它有 pointer-events:none），才能單獨接收拖曳事件 -->
+  <div id="travel-anchor-handle" class="travel-anchor-handle" title="拖曳移動羅盤圓心"></div>
 </div>
 
 <!-- 出行訣 階段一：詢問是否進入吉凶標記模式（羅盤已啟用時再次點擊中宮觸發） -->
@@ -1909,11 +1928,11 @@ function cycleTravelMark(house) {
 }
 
 // 階段三：把 travelMarks 目前狀態套到全螢幕扇形羅盤（travel-compass-disc）的宮位文字上
-// 金字＝吉、黑字＝凶，不改動扇形本身的顏色與分隔線（整片扇形描邊視覺上太笨重，見「還是高亮文字」的討論）
+// 金字＝吉、黑字＝凶，卦名／方位字／中間分隔點三層一起變色，不改動扇形本身的顏色與分隔線
 function updateTravelCompassSectorMarks() {
   TRAVEL_MARK_HOUSES.forEach(h => {
     const v = travelMarks[h];
-    document.querySelectorAll('.travel-compass-gua[data-house="' + h + '"], .travel-compass-dir[data-house="' + h + '"]').forEach(label => {
+    document.querySelectorAll('.travel-compass-gua[data-house="' + h + '"], .travel-compass-dir[data-house="' + h + '"], .travel-compass-dot[data-house="' + h + '"]').forEach(label => {
       label.classList.remove('mark-lucky', 'mark-unlucky');
       if (v === '吉') label.classList.add('mark-lucky');
       else if (v === '凶') label.classList.add('mark-unlucky');
@@ -2153,6 +2172,13 @@ let travelCompassEnabled = false;
 let travelBoardPlaceholder = null;
 let travelInlineWrapPrevDisplay = null; // 階段三：記住展開全螢幕前，方框內嵌地圖(travel-inline-map-wrap)原本的 display 值，供關閉全螢幕時還原
 
+// 圓心錨定（手動模式，預設關閉）：開啟後羅盤圓心固定在地圖上的某個經緯度，不再跟著畫面置中；
+// 可拖曳 #travel-anchor-handle 重新設定錨點；即時位置藍點（travelPositionMarker）不受影響，兩者並存
+let travelCompassAnchored = false;
+let travelCompassAnchorLatLng = null; // L.LatLng
+let travelAnchorDragging = false;
+let travelAnchorDragStart = { x: 0, y: 0, sx: 0, sy: 0 };
+
 function setTravelStatus(message) {
   const statusEl = document.getElementById('travel-status');
   if (statusEl) statusEl.textContent = message;
@@ -2167,6 +2193,10 @@ function initializeTravelMap() {
     subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
     attribution: 'Map data © Google'
   }).addTo(travelMap);
+  // 錨定模式下，地圖平移/縮放要重算錨點對應的螢幕座標
+  travelMap.on('move zoom', function() {
+    if (travelCompassAnchored) applyTravelCompassPos();
+  });
 }
 
 function locateTravelPosition(forceZoom) {
@@ -2203,6 +2233,103 @@ function renderTravelCompass(heading) {
   const labelEl = document.getElementById('travel-compass-label-disc');
   if (labelEl) labelEl.style.transform = `rotate(${(360 - heading) % 360}deg)`;
 }
+
+// ── 圓心錨定（手動，預設關閉）──
+// 關閉：羅盤浮在畫面正中央（left/top:50%，跟 .travel-compass 原本的置中邏輯一致）
+// 開啟：羅盤圓心固定在 travelCompassAnchorLatLng 這個地理座標，隨地圖平移/縮放重算螢幕位置
+function applyTravelCompassPos() {
+  const compassEl = document.querySelector('.travel-compass');
+  const handle = document.getElementById('travel-anchor-handle');
+  if (!compassEl) return;
+  if (!travelCompassAnchored || !travelCompassAnchorLatLng || !travelMap) {
+    compassEl.style.left = '50%';
+    compassEl.style.top = '50%';
+    if (handle) handle.style.display = 'none';
+    return;
+  }
+  const pt = travelMap.latLngToContainerPoint(travelCompassAnchorLatLng);
+  compassEl.style.left = pt.x + 'px';
+  compassEl.style.top = pt.y + 'px';
+  if (handle) {
+    handle.style.left = pt.x + 'px';
+    handle.style.top = pt.y + 'px';
+    handle.style.display = 'block';
+  }
+}
+
+function toggleTravelAnchor() {
+  travelCompassAnchored = !travelCompassAnchored;
+  const btn = document.getElementById('travel-anchor-toggle');
+  if (btn) btn.classList.toggle('active', travelCompassAnchored);
+  if (travelCompassAnchored) {
+    // 開啟當下：抓目前畫面中心對應的地圖座標，當作初始錨點（比照參考做法）
+    if (travelMap) travelCompassAnchorLatLng = travelMap.getCenter();
+    setTravelStatus('圓心已錨定，可拖曳 ✥ 調整位置');
+  } else {
+    travelCompassAnchorLatLng = null;
+    setTravelStatus('圓心已取消錨定，回到畫面正中央');
+  }
+  applyTravelCompassPos();
+}
+
+// 拖曳手把重新設定錨點（滑鼠＋觸控），手把獨立於 .travel-compass 之外（後者 pointer-events:none）
+function updateTravelAnchorScreenPos(sx, sy) {
+  const compassEl = document.querySelector('.travel-compass');
+  const handle = document.getElementById('travel-anchor-handle');
+  if (compassEl) { compassEl.style.left = sx + 'px'; compassEl.style.top = sy + 'px'; }
+  if (handle) { handle.style.left = sx + 'px'; handle.style.top = sy + 'px'; }
+  if (travelMap) travelCompassAnchorLatLng = travelMap.containerPointToLatLng(L.point(sx, sy));
+}
+
+function initTravelAnchorDrag() {
+  const handle = document.getElementById('travel-anchor-handle');
+  const compassEl = document.querySelector('.travel-compass');
+  if (!handle) return;
+
+  function dragStart(sx0, sy0, clientX, clientY) {
+    travelAnchorDragging = true;
+    if (compassEl) compassEl.classList.add('anchor-dragging');
+    travelAnchorDragStart.x = clientX;
+    travelAnchorDragStart.y = clientY;
+    travelAnchorDragStart.sx = sx0;
+    travelAnchorDragStart.sy = sy0;
+  }
+  function dragEnd() {
+    travelAnchorDragging = false;
+    if (compassEl) compassEl.classList.remove('anchor-dragging');
+  }
+
+  handle.addEventListener('mousedown', function(e) {
+    if (!travelCompassAnchored || !travelCompassAnchorLatLng || !travelMap) return;
+    const pt = travelMap.latLngToContainerPoint(travelCompassAnchorLatLng);
+    dragStart(pt.x, pt.y, e.clientX, e.clientY);
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!travelAnchorDragging) return;
+    const sx = travelAnchorDragStart.sx + (e.clientX - travelAnchorDragStart.x);
+    const sy = travelAnchorDragStart.sy + (e.clientY - travelAnchorDragStart.y);
+    updateTravelAnchorScreenPos(sx, sy);
+  });
+  document.addEventListener('mouseup', function() { if (travelAnchorDragging) dragEnd(); });
+
+  handle.addEventListener('touchstart', function(e) {
+    if (!travelCompassAnchored || !travelCompassAnchorLatLng || !travelMap) return;
+    const t = e.touches[0];
+    const pt = travelMap.latLngToContainerPoint(travelCompassAnchorLatLng);
+    dragStart(pt.x, pt.y, t.clientX, t.clientY);
+    e.preventDefault();
+  }, { passive: false });
+  document.addEventListener('touchmove', function(e) {
+    if (!travelAnchorDragging) return;
+    const t = e.touches[0];
+    const sx = travelAnchorDragStart.sx + (t.clientX - travelAnchorDragStart.x);
+    const sy = travelAnchorDragStart.sy + (t.clientY - travelAnchorDragStart.y);
+    updateTravelAnchorScreenPos(sx, sy);
+  }, { passive: false });
+  document.addEventListener('touchend', function() { if (travelAnchorDragging) dragEnd(); });
+}
+initTravelAnchorDrag();
 
 function handleTravelOrientation(event) {
   let heading = null;
@@ -2271,6 +2398,12 @@ function closeTravelMode() {
   if (!overlay || !overlay.classList.contains('is-open')) return;
   overlay.classList.remove('is-open', 'board-visible');
   document.getElementById('travel-orientation-card').classList.remove('is-visible');
+  // 關閉全螢幕：圓心錨定重設回預設關閉狀態，下次重新進入維持「浮在畫面正中央」的預設行為
+  travelCompassAnchored = false;
+  travelCompassAnchorLatLng = null;
+  const anchorBtn = document.getElementById('travel-anchor-toggle');
+  if (anchorBtn) anchorBtn.classList.remove('active');
+  applyTravelCompassPos();
   setTimeout(function() {
     if (board && travelBoardPlaceholder) {
       travelBoardPlaceholder.parentNode.insertBefore(board, travelBoardPlaceholder);
