@@ -315,19 +315,21 @@
   .gc-daxian .dx-num { position: absolute; left: 50%; top: 0; transform: translateX(-50%); }
   .gc-daxian .dx-suffix { position: absolute; left: 50%; top: 3px; transform: translateX(8px); font-size: 8px; }
 
-  /* 出行訣：吉凶標記（借用 c1r2／gc-left2 這格，跟命盤大限互斥顯示，見 enterTravelMarkingMode） */
-  .gc-left2.travel-marking-active { cursor: pointer; }
-  /* 階段三＋：地圖模式下按「盤」鈕顯示盤面時，吉凶標記格也能點擊修改（見 travelMarkEditable） */
-  .outer.travel-map-mode.board-visible .gc-left2 { cursor: pointer; }
+  /* 出行訣：吉凶標記顯示在 c1r2／gc-left2 這格（跟命盤大限互斥），但點擊改成整個宮位都能觸發（見下方 JS 綁定） */
+  .cell[data-gong].travel-marking-active { cursor: pointer; }
+  /* 地圖模式下按「盤」鈕顯示盤面時，整個宮位也能點擊修改吉凶（見 travelMarkEditable） */
+  .outer.travel-map-mode.board-visible .cell[data-gong] { cursor: pointer; }
   .travel-mark-label {
     font-size: 13px; font-weight: bold;
     font-family: "M PLUS Rounded 1c", sans-serif;
   }
-  .travel-mark-label.mark-lucky   { color: #FFB700; text-shadow: 0 0 4px currentColor, 0 0 9px currentColor; }
-  .travel-mark-label.mark-unlucky { color: #c0392b; text-shadow: 0 0 4px currentColor, 0 0 9px currentColor; }
+  /* 光暈感只在扇形羅盤（.travel-compass-gua/dir）顯示，這裡（九宮格內的標記）維持純色，不加光暈 */
+  .travel-mark-label.mark-lucky   { color: #FFB700; }
+  .travel-mark-label.mark-unlucky { color: #c0392b; }
   /* 未標記時的提示：拿掉「吉/凶」斜線，改成上下兩行——吉靠左、凶靠右；字體大小跟已選取時一樣（13px），只用灰色跟實際標記色區分 */
   .travel-mark-label.mark-placeholder {
     display: flex; flex-direction: column; align-items: stretch;
+    width: 100%; /* 撐滿 .gc-left2 的寬度，text-align:left/right 才有位移空間可以看出差異 */
     line-height: 1.05; color: #bbb;
   }
   .travel-mark-label.mark-placeholder .travel-mark-line-lucky   { text-align: left; }
@@ -951,8 +953,9 @@
   .travel-marking-banner span { white-space: normal; text-align: center; line-height: 1.4; }
   .travel-marking-banner .travel-marking-actions { display: flex; gap: 8px; }
   .travel-marking-banner button {
-    border: none; border-radius: 7px; padding: 7px 11px; font-size: 13px;
-    font-weight: bold; cursor: pointer; font-family: inherit; flex-shrink: 0;
+    border: none; border-radius: 50%; width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: bold; cursor: pointer; font-family: inherit; flex-shrink: 0;
   }
   .travel-marking-confirm { background: #2e7d32; color: #fff; }
   .travel-marking-cancel  { background: #eee; color: #555; }
@@ -993,8 +996,8 @@
 
   /* 地圖模式：九宮格線（.cell 邊框）與 r1c1 宮位標籤留在畫面上，其餘內容透明化／隱藏，讓地圖從縫間透出 */
   .outer.travel-map-mode .grid { position: relative; z-index: 1; pointer-events: none; }
-  /* 盤面顯示時，吉凶標記格要能點擊修改（見 travelMarkEditable）——.grid 整體 pointer-events:none 會連帶擋掉，這裡單獨救回來 */
-  .outer.travel-map-mode.board-visible .gc-left2 { pointer-events: auto; }
+  /* 盤面顯示時，整個宮位都要能點擊修改吉凶（見 travelMarkEditable）——.grid 整體 pointer-events:none 會連帶擋掉，這裡單獨救回來 */
+  .outer.travel-map-mode.board-visible .cell[data-gong] { pointer-events: auto; }
   .outer.travel-map-mode .cell { background: transparent; }
   .outer.travel-map-mode .gc-shen,
   .outer.travel-map-mode .gc-star,
@@ -1315,10 +1318,10 @@
     <div class="cell center">
     <!-- 出行訣 階段一：標記模式提示，疊在中宮正中央（.cell.center 是定位基準，見 CSS） -->
     <div class="travel-marking-banner" id="travel-marking-banner">
-      <span>點各宮左中格切換吉凶</span>
+      <span>點擊各宮位標記吉凶</span>
       <div class="travel-marking-actions">
-        <button type="button" class="travel-marking-cancel"  onclick="cancelTravelMarking()">✕ 取消</button>
-        <button type="button" class="travel-marking-confirm" onclick="confirmTravelMarking()">✓ 確認</button>
+        <button type="button" class="travel-marking-cancel"  onclick="cancelTravelMarking()" aria-label="取消">✕</button>
+        <button type="button" class="travel-marking-confirm" onclick="confirmTravelMarking()" aria-label="確認">✓</button>
       </div>
     </div>
     <div id="g5r1c1" class="gc gc-center" style="grid-column:1;grid-row:1;"><div class="dz9">
@@ -1899,6 +1902,10 @@ function cycleTravelMark(house) {
   travelMarks[house] = cur === null ? '吉' : (cur === '吉' ? '凶' : null);
   renderTravelMark(house);
   updateTravelCompassSectorMarks(); // 階段三：同步標記狀態到全螢幕扇形羅盤邊框（即使當下還沒開全螢幕也先同步好）
+  // 標記時保留橘框高亮，手感比照十二長生：單一高亮、點哪個宮位就換到哪個宮位（不顯示天干長生文字，那部分仍停用）
+  clearHighlight();
+  const cell = document.querySelector('.cell[data-gong="' + house + '"]');
+  if (cell) applyHouseHighlight(cell);
 }
 
 // 階段三：把 travelMarks 目前狀態套到全螢幕扇形羅盤（travel-compass-disc）的宮位文字上
@@ -1923,11 +1930,19 @@ function enterTravelMarkingMode() {
     applyPlateMode(_prevPlateMode);
     if (_prevPlateMode === 'yang') applyYangSubMode(_prevPlateSubmode);
   }
+  // 進入出行訣標記：宮位點擊改切換吉凶用途，先清掉十二長生原本可能留著的高亮／內容，避免混在一起
+  document.querySelectorAll('.gc-tian .stem-active, .gc-shen .stem-active').forEach(s => s.classList.remove('stem-active'));
+  clearHighlight();
+  clearChangsheng();
+  _activeChangshengHouse = null;
+  _activeChangshengIndex = -1;
+  const yongshenEl = document.getElementById('hb-yongshen');
+  if (yongshenEl) yongshenEl.textContent = '—';
   travelMarkingActive = true;
   TRAVEL_MARK_HOUSES.forEach(h => {
     const markEl = document.getElementById('travel-mark-' + h);
     if (markEl) markEl.style.display = '';
-    const cell = document.getElementById('g' + h + 'r2c1');
+    const cell = document.querySelector('.cell[data-gong="' + h + '"]');
     if (cell) cell.classList.add('travel-marking-active');
     renderTravelMark(h);
   });
@@ -1939,10 +1954,11 @@ function exitTravelMarkingModeUI() {
   TRAVEL_MARK_HOUSES.forEach(h => {
     const markEl = document.getElementById('travel-mark-' + h);
     if (markEl) markEl.style.display = 'none';
-    const cell = document.getElementById('g' + h + 'r2c1');
+    const cell = document.querySelector('.cell[data-gong="' + h + '"]');
     if (cell) cell.classList.remove('travel-marking-active');
   });
   document.getElementById('travel-marking-banner').classList.remove('is-open');
+  clearHighlight(); // 退出標記模式，順手清掉標記期間留下的高亮框，回到一般排盤畫面時不留殘影
 }
 
 // 取消：退出標記模式的畫面，但保留目前已選的 travelMarks 資料，下次再開仍在
@@ -1959,12 +1975,12 @@ function confirmTravelMarking() {
   enterTravelMapMode();
 }
 
+// 點整個宮位（不限左中格小範圍）都可以切換吉凶；十二長生的宮位點擊高亮在標記期間會自行停用（見 changshengClickDisabled），兩者不衝突
 TRAVEL_MARK_HOUSES.forEach(h => {
-  const cell = document.getElementById('g' + h + 'r2c1');
+  const cell = document.querySelector('.cell[data-gong="' + h + '"]');
   if (cell) {
-    cell.addEventListener('click', function(e) {
+    cell.addEventListener('click', function() {
       if (!travelMarkEditable()) return;
-      e.stopPropagation(); // 標記模式下不冒泡到外層宮位，避免同時觸發十二長生橘框高亮
       cycleTravelMark(h);
     });
   }
@@ -2542,8 +2558,17 @@ function applyHouseHighlight(cellEl) {
   }
 }
 
+// 出行訣標記中（travelMarkingActive 或地圖模式）：宮位點擊改成切換吉凶用途，
+// 十二長生的宮位點擊高亮功能在此期間先禁用，避免兩種點擊意圖互相干擾
+function changshengClickDisabled() {
+  if (typeof travelMarkingActive !== 'undefined' && travelMarkingActive) return true;
+  const outer = document.getElementById('outer-board');
+  return !!(outer && outer.classList.contains('travel-map-mode'));
+}
+
 document.querySelectorAll('.cell[data-gong]').forEach(cell => {
   cell.addEventListener('click', function() {
+    if (changshengClickDisabled()) return;
     const candidates = getHouseChangshengCandidates(this);
     if (candidates.length === 0) return;
 
