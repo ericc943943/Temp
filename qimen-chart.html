@@ -872,10 +872,10 @@
   /* pointer-events:none：盤面搬進出行羅盤疊層後純粹是過場視覺用，opacity 淡出後底層不可再被誤觸（原本 pointer-events:auto 會讓十二長生等互動在地圖模式下被意外觸發）。 */
   .travel-board-layer .outer { width: min(82vmin, 520px); margin: 0; pointer-events: none; transition: opacity .22s ease, transform .26s ease; }
   .travel-overlay.is-opening .travel-board-layer .outer { opacity: 0; transform: scale(.88); }
-  .travel-compass { position: absolute; z-index: 3; left: 50%; top: 50%; display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0; transform: translate(-50%,-50%) scale(.82); transition: opacity .28s ease .11s, transform .34s ease .11s, left .2s ease, top .2s ease; }
+  /* left/top 不設 transition：錨定後不論地圖拖曳、縮放、或拖手把調整錨點，圓心都要跟座標即時同步，
+     不能有動畫內插——否則拖曳中會延遲落後、放開後才追上，看起來像「被干擾又自己跳回去」 */
+  .travel-compass { position: absolute; z-index: 3; left: 50%; top: 50%; display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0; transform: translate(-50%,-50%) scale(.82); transition: opacity .28s ease .11s, transform .34s ease .11s; }
   .travel-overlay.is-open .travel-compass { opacity: 1; transform: translate(-50%,-50%) scale(1); }
-  /* 錨定拖曳中：拿掉 left/top 的 transition，才能即時跟手不delay */
-  .travel-compass.anchor-dragging { transition: opacity .28s ease .11s, transform .34s ease .11s; }
   /* 用 vmax（螢幕長邊）作為基準，橫向裝置放大時才會覆蓋左右與四角。 */
   .travel-compass-disc { width: var(--travel-compass-size, 88vmax); height: var(--travel-compass-size, 88vmax); flex: 0 0 auto; max-width: none; max-height: none; transition: transform .08s linear; }
   .travel-compass-disc .travel-compass-gua,
@@ -917,13 +917,16 @@
   .travel-orientation-card.is-visible { display: flex; }
   .travel-orientation-card span { flex: 1; }
   .travel-orientation-card button { border: none; border-radius: 8px; padding: 8px 12px; background: #555; color: #fff; }
-  /* 回到目前位置按鈕：仿 Google Map 那種圓形箭頭浮動按鈕，放左下角避開右側的羅盤大小面板 */
-  .travel-locate-btn { position: absolute; z-index: 4; right: 12px; top: 66px; width: 44px; height: 44px; border-radius: 50%; border: none; background: rgba(255,255,255,.94); color: #2471a3; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,.18); pointer-events: auto; }
-  .travel-locate-btn:active { background: #eee; }
-  /* 縮放控制也搬到右邊，跟定位鈕同一側靠邊；往下推開，避免疊到工具列跟定位鈕 */
-  .travel-overlay .leaflet-top.leaflet-right { top: 118px; }
-  /* 圓心錨定：工具列的開關鈕（手動決定要不要開啟，預設關閉），以及開啟後顯示的拖曳手把 */
-  .travel-toolbar button.active { background: #2471a3; color: #fff; }
+  /* 回到目前位置按鈕、圓心錨定開關鈕：改放右下角，疊在「羅盤大小」面板正上方（原本在右上角，2026.08移下來） */
+  .travel-locate-btn, .travel-anchor-toggle { position: absolute; z-index: 4; right: 12px; width: 44px; height: 44px; border-radius: 50%; border: none; font-size: 18px; background: rgba(255,255,255,.94); color: #2471a3; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,.18); pointer-events: auto; }
+  .travel-locate-btn:active, .travel-anchor-toggle:active { background: #eee; }
+  /* 定位鈕貼著羅盤大小面板上緣；錨定鈕疊在定位鈕上方 */
+  .travel-locate-btn { bottom: calc(max(18px, env(safe-area-inset-bottom)) + 78px); }
+  .travel-anchor-toggle { bottom: calc(max(18px, env(safe-area-inset-bottom)) + 130px); }
+  /* 縮放控制搬到右邊，跟定位鈕同一側靠邊 */
+  .travel-overlay .leaflet-top.leaflet-right { top: 12px; }
+  /* 圓心錨定開關鈕啟用態 */
+  .travel-anchor-toggle.active { background: #2471a3; color: #fff; }
   .travel-anchor-handle {
     position: absolute; display: none;
     width: 22px; height: 22px; border-radius: 50%;
@@ -1510,7 +1513,8 @@
       <circle class="travel-compass-center" cx="100" cy="100" r="3" fill="rgba(255,255,255,.9)"/>
     </svg>
   </div>
-  <div class="travel-toolbar"><button type="button" onclick="closeTravelMode()">← 返回盤面</button><div class="travel-status" id="travel-status">載入地圖與定位中…</div><button type="button" id="travel-anchor-toggle" onclick="toggleTravelAnchor()" aria-label="錨定圓心於地圖座標" title="錨定圓心於地圖座標">⚓</button></div>
+  <div class="travel-toolbar"><button type="button" onclick="closeTravelMode()">← 返回盤面</button><div class="travel-status" id="travel-status">載入地圖與定位中…</div></div>
+  <button type="button" class="travel-anchor-toggle" id="travel-anchor-toggle" onclick="toggleTravelAnchor()" aria-label="錨定圓心於地圖座標" title="錨定圓心於地圖座標">⚓</button>
   <div class="travel-size-control"><label for="travel-size-range">羅盤大小 <span id="travel-size-value">88%</span></label><input id="travel-size-range" type="range" min="45" max="500" value="88" aria-label="調整羅盤大小"></div>
   <div class="travel-orientation-card" id="travel-orientation-card"><span>啟用羅盤，讓方位圖跟著手機朝向轉動</span><button type="button" id="travel-orientation-btn">啟用</button></div>
   <button type="button" class="travel-locate-btn" aria-label="回到目前位置" onclick="recenterTravelPosition()">
