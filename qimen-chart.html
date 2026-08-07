@@ -987,9 +987,10 @@
   .outer.travel-map-mode .gc-left {
     background: rgba(255,255,255,.74); border-radius: 0 0 8px 0;
   }
-  /* 指針(.dz-center)在地圖模式下維持顯示，充當「目前位置」標記（取代原本 Leaflet 藍點），
-     且改為跟著九宮方位固定（見 JS setTravelCompassOrientation／travelCompassFrozen），不再跟即時裝置朝向連動；
-     只有點旋轉鈕時才連動翻轉。過渡時間拉長跟地圖的 0.5s 同步，翻轉手感一致。 */
+  /* 指針(.dz-center)在地圖模式下維持顯示，讓使用者知道上方離9是南、下方坎1是北（跟九宮方位對照），
+     跟地圖是疊在一起的兩層投影片：指針固定跟九宮同步，不跟即時裝置朝向連動，只有點旋轉鈕時才一起翻轉
+     （見 JS setTravelCompassOrientation／travelCompassFrozen）。藍點（目前位置）另外保留，兩者並存。
+     過渡時間拉長跟地圖的 0.5s 同步，翻轉手感一致。 */
   .outer.travel-map-mode .compass-ring { transition: transform .5s ease; }
 
   /* 盤面顯示/隱藏：點右上角「盤」鈕切換，半透明疊加在地圖上方，固定在同一塊九宮框內，不出框 */
@@ -1874,6 +1875,7 @@ TRAVEL_MARK_HOUSES.forEach(h => {
 // 出行訣 階段二 2a：方框內嵌地圖（confirmTravelMarking 收尾後觸發，固定在原九宮框範圍內）
 // ══════════════════════════════════
 let inlineTravelMap = null;
+let inlineTravelPositionMarker = null;
 
 function initializeInlineTravelMap() {
   if (inlineTravelMap || typeof L === 'undefined') return;
@@ -1893,8 +1895,8 @@ function locateInlineTravelPosition(forceZoom) {
   if (!inlineTravelMap || !navigator.geolocation) return;
   navigator.geolocation.getCurrentPosition(function(position) {
     const latLng = [position.coords.latitude, position.coords.longitude];
-    // 不再另外放藍點標記——中宮指針(.dz-center)固定在畫面正中央，跟地圖置中後的座標點重疊，
-    // 指針本身就是「目前位置」標記，藍點會是多餘的視覺重複
+    if (inlineTravelPositionMarker) inlineTravelMap.removeLayer(inlineTravelPositionMarker);
+    inlineTravelPositionMarker = L.circleMarker(latLng, { radius: 7, color: '#2471a3', fillColor: '#2471a3', fillOpacity: 1, weight: 2 }).addTo(inlineTravelMap);
     if (forceZoom) {
       inlineTravelMap.setView(latLng, 16);
     } else {
