@@ -388,10 +388,10 @@
   .dz9-label { font-size: 26.7cqi; line-height: 1; white-space: nowrap; }
   .dz-center { position: relative; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #bbb; width:100%; height:100%; cursor: pointer; }
   /* 出行訣旋轉：指針左右各一個小箭頭，2026.08 從獨立的⟳按鈕併入中宮指針（見下方 travel-map-mode 顯示規則） */
-  .compass-rotate-arrow { position: absolute; top: 50%; width: 9px; height: 9px; opacity: 0; transition: opacity .2s ease, color .3s ease; pointer-events: none; color: #999; }
+  .compass-rotate-arrow { position: absolute; top: 50%; width: 15px; height: 15px; opacity: 0; transition: opacity .2s ease, color .3s ease; pointer-events: none; color: #999; }
   .compass-rotate-arrow svg { width: 100%; height: 100%; display: block; }
-  .compass-rotate-arrow.left  { left: -4px; transform: translateY(-50%); }
-  .compass-rotate-arrow.right { right: -4px; transform: translateY(-50%) scaleX(-1); } /* 跟左邊鏡像對稱，同一個圖形轉個方向 */
+  .compass-rotate-arrow.left  { left: -8px; transform: translateY(-50%); }
+  .compass-rotate-arrow.right { right: -8px; transform: translateY(-50%) rotate(180deg); } /* 跟左邊對角對稱（旋轉180°，不是左右鏡像），兩者合起來才有繞圈的感覺 */
   .compass-ring {
     position: relative;
     width: 100%;
@@ -925,6 +925,7 @@
   .travel-orientation-card button { border: none; border-radius: 8px; padding: 8px 12px; background: #555; color: #fff; }
   /* 回到目前位置按鈕、圓心錨定開關鈕：改放右下角，疊在「羅盤大小」面板正上方（原本在右上角，2026.08移下來） */
   .travel-locate-btn, .travel-anchor-toggle { position: absolute; z-index: 4; right: 12px; width: 44px; height: 44px; border-radius: 50%; border: none; font-size: 18px; background: rgba(255,255,255,.94); color: #2471a3; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,.18); pointer-events: auto; }
+  .travel-anchor-toggle svg { width: 23px; height: 23px; display: block; }
   .travel-locate-btn:active, .travel-anchor-toggle:active { background: #eee; }
   /* 定位鈕貼著羅盤大小面板上緣；錨定鈕疊在定位鈕上方 */
   .travel-locate-btn { bottom: calc(max(18px, env(safe-area-inset-bottom)) + 78px); }
@@ -1364,13 +1365,15 @@
       <div class="dz9-cell align-left" style="grid-column:2 / span 2;grid-row:2;"><span class="dz9-label" data-dz-label="卯"></span></div>
     </div></div>
     <div id="g5r2c2" class="gc gc-center" style="grid-column:2;grid-row:2;"><div class="dz-center" id="compassCell" title="點擊啟用指南針">
+      <!-- 出行訣旋轉：2026.08 併入指針左右，箭頭放在 #compassRing 裡面，才會跟著指針一起轉；
+           只在方框內嵌地圖模式顯示（見 CSS #paipan-result .outer.travel-map-mode .compass-rotate-arrow），點整個中宮即可觸發 -->
       <div class="compass-ring" id="compassRing"><div class="compass-needle">
         <div class="needle-half needle-s">S</div>
         <div class="needle-half needle-n">N</div>
-      </div></div>
-      <!-- 出行訣旋轉：2026.08 併入指針左右，只在方框內嵌地圖模式顯示（見 CSS #paipan-result .outer.travel-map-mode .compass-rotate-arrow），點整個中宮即可觸發 -->
-      <span class="compass-rotate-arrow left" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 1 2.6 5.9"/><path d="M4 17v-5h5"/></svg></span>
-      <span class="compass-rotate-arrow right" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 1 2.6 5.9"/><path d="M4 17v-5h5"/></svg></span>
+      </div>
+      <span class="compass-rotate-arrow left" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4.5 13.5A7.5 7.5 0 0 1 17 6.4" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/><path d="M20.3 3.7 20.9 9.7 15.3 7.6Z" fill="currentColor"/></svg></span>
+      <span class="compass-rotate-arrow right" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4.5 13.5A7.5 7.5 0 0 1 17 6.4" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/><path d="M20.3 3.7 20.9 9.7 15.3 7.6Z" fill="currentColor"/></svg></span>
+      </div>
       <span id="daxian-5" class="gc-daxian mingpan-label" style="display:none;"></span>
     </div></div>
     <div id="g5r2c3" class="gc gc-center" style="grid-column:3;grid-row:2;"><div class="dz9">
@@ -1521,7 +1524,7 @@
   </div>
   <div class="travel-toolbar"><button type="button" onclick="closeTravelMode()">← 返回盤面</button></div>
   <div class="travel-status" id="travel-status">載入地圖與定位中…</div>
-  <button type="button" class="travel-anchor-toggle" id="travel-anchor-toggle" onclick="toggleTravelAnchor()" aria-label="錨定圓心於地圖座標" title="錨定圓心於地圖座標">⚓</button>
+  <button type="button" class="travel-anchor-toggle" id="travel-anchor-toggle" onclick="toggleTravelAnchor()" aria-label="錨定圓心於地圖座標" title="錨定圓心於地圖座標"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg></button>
   <div class="travel-size-control"><label for="travel-size-range">羅盤大小 <span id="travel-size-value">88%</span></label><input id="travel-size-range" type="range" min="45" max="500" value="88" aria-label="調整羅盤大小"></div>
   <div class="travel-orientation-card" id="travel-orientation-card"><span>啟用羅盤，讓方位圖跟著手機朝向轉動</span><button type="button" id="travel-orientation-btn">啟用</button></div>
   <button type="button" class="travel-locate-btn" aria-label="回到目前位置" onclick="recenterTravelPosition()">
