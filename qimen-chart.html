@@ -934,7 +934,7 @@
   /* 工具列放在方框外、正上方（原引干 yigan-top 佔用的空間），不疊在地圖上擋視線；預設隱藏，僅地圖模式顯示 */
   .travel-inline-toolbar {
     display: none;
-    position: absolute; z-index: 5; top: -32px; left: 0; right: 0;
+    position: absolute; z-index: 5; top: -32px; left: 16.667%; transform: translateX(-50%);
     justify-content: center; gap: 10px;
   }
   .outer.travel-map-mode .travel-inline-toolbar { display: flex; }
@@ -965,7 +965,10 @@
   /* 中宮比較特殊：.cell.center 本身 border:none，外框線是靠中宮內部 9 個小格(.gc-center)各自的邊框拼出來的，
      所以中宮不能整格 visibility:hidden（會連邊框一起藏掉），只藏裡面的內容（地支時鐘、指南針） */
   .outer.travel-map-mode .yigan {
-    visibility: hidden; /* 出行訣用不到引干，地圖模式下一併藏起來 */
+    visibility: hidden; /* 出行訣用不到引干，地圖模式下先藏起來；「盤」開關開啟時屬於盤面資訊的一部分，一併現形 */
+  }
+  .outer.travel-map-mode.board-visible .yigan {
+    visibility: visible;
   }
   .outer.travel-map-mode .gc-center .dz9,
   .outer.travel-map-mode .gc-center .dz-center {
