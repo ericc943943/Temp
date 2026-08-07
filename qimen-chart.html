@@ -931,16 +931,19 @@
   ══════════════════════════════════ */
   .travel-inline-map-wrap { position: absolute; inset: 0; z-index: 0; border-radius: 12px; overflow: hidden; }
   .travel-inline-map { position: absolute; inset: 0; transform: rotate(180deg); /* 預設南上北下，配合盤面慣例；旋轉按鈕（2b）會轉回北上南下 */ }
+  .travel-inline-toolbar {
+    position: absolute; z-index: 2; top: 8px; left: 8px; right: 8px;
+    display: flex; gap: 8px;
+  }
   .travel-inline-exit, .travel-inline-locate, .travel-inline-board-toggle {
-    position: absolute; z-index: 2; width: 30px; height: 30px; border-radius: 50%;
+    width: 30px; height: 30px; border-radius: 50%;
     border: none; background: rgba(255,255,255,.92); color: #333;
     font-size: 15px; display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 2px 6px rgba(0,0,0,.2);
+    box-shadow: 0 2px 6px rgba(0,0,0,.2); flex-shrink: 0;
   }
-  .travel-inline-exit   { top: 8px; left: 8px; }
-  .travel-inline-board-toggle { top: 8px; right: 8px; font-size: 12px; }
+  .travel-inline-board-toggle { font-size: 12px; }
   .travel-inline-board-toggle.active { background: #2471a3; color: #fff; }
-  .travel-inline-locate { bottom: 8px; right: 8px; color: #2471a3; }
+  .travel-inline-locate { position: absolute; z-index: 2; bottom: 8px; right: 8px; color: #2471a3; }
   .travel-inline-exit:active, .travel-inline-locate:active, .travel-inline-board-toggle:active { opacity: .85; }
 
   /* 地圖模式：九宮格線（.cell 邊框）與 r1c1 宮位標籤留在畫面上，其餘內容透明化／隱藏，讓地圖從縫間透出 */
@@ -958,9 +961,17 @@
   }
   /* 中宮比較特殊：.cell.center 本身 border:none，外框線是靠中宮內部 9 個小格(.gc-center)各自的邊框拼出來的，
      所以中宮不能整格 visibility:hidden（會連邊框一起藏掉），只藏裡面的內容（地支時鐘、指南針） */
+  .outer.travel-map-mode .yigan {
+    visibility: hidden; /* 出行訣用不到引干，地圖模式下一併藏起來 */
+  }
   .outer.travel-map-mode .gc-center .dz9,
   .outer.travel-map-mode .gc-center .dz-center {
     visibility: hidden;
+  }
+  /* 中宮內部本來還有一圈#ccc細格線（地支時鐘的分格線），地圖模式下一併拿掉，只留外框（外框走ID選擇器，優先度較高不受影響） */
+  .outer.travel-map-mode .gc-center {
+    border-right: none;
+    border-bottom: none;
   }
   .outer.travel-map-mode .gc-left {
     background: rgba(255,255,255,.74); border-radius: 0 0 8px 0;
@@ -968,7 +979,7 @@
 
   /* 盤面顯示/隱藏：點右上角「盤」鈕切換，半透明疊加在地圖上方，固定在同一塊九宮框內，不出框 */
   .outer.travel-map-mode.board-visible .cell {
-    background: rgba(255,255,255,.82);
+    background: rgba(255,255,255,.70);
   }
   .outer.travel-map-mode.board-visible .gc-shen,
   .outer.travel-map-mode.board-visible .gc-star,
@@ -1178,8 +1189,10 @@
   <!-- 出行訣 階段二 2a：方框內嵌地圖。z-index 低於 .grid，透過 .cell 背景透明讓地圖從九宮線縫間透出 -->
   <div class="travel-inline-map-wrap" id="travel-inline-map-wrap" style="display:none;">
     <div class="travel-inline-map" id="travel-inline-map"></div>
-    <button type="button" class="travel-inline-exit" id="travel-inline-exit" aria-label="返回盤面">←</button>
-    <button type="button" class="travel-inline-board-toggle" id="travel-inline-board-toggle" aria-label="顯示/隱藏盤面">盤</button>
+    <div class="travel-inline-toolbar">
+      <button type="button" class="travel-inline-exit" id="travel-inline-exit" aria-label="返回盤面">←</button>
+      <button type="button" class="travel-inline-board-toggle" id="travel-inline-board-toggle" aria-label="顯示/隱藏盤面">盤</button>
+    </div>
     <button type="button" class="travel-inline-locate" id="travel-inline-locate" aria-label="拉回目前位置">◎</button>
   </div>
 
@@ -1486,8 +1499,8 @@ function applyPlateMode(mode) {
   document.getElementById('plate-yin-row').style.display = (mode === 'yin' && !MING_PAN_MODE) ? 'flex' : 'none';
   document.getElementById('plate-subtoggle').style.display = (mode === 'yang' && !MING_PAN_MODE) ? 'flex' : 'none';
   updateQuickNav();
-  // 出行訣僅限陽盤・時家；切走時若標記模式還開著，自動退出標記 UI（travelMarks 資料保留，只是畫面收起）
-  if (typeof travelMarkingActive !== 'undefined' && travelMarkingActive && (mode !== 'yang' || (typeof PLATE_SUBMODE !== 'undefined' && PLATE_SUBMODE !== 'time'))) {
+  // 出行訣開放給所有陽盤子模式；切到陰盤時，若標記模式還開著，自動退出標記 UI（travelMarks 資料保留，只是畫面收起）
+  if (typeof travelMarkingActive !== 'undefined' && travelMarkingActive && mode !== 'yang') {
     exitTravelMarkingModeUI();
   }
 }
@@ -1511,10 +1524,6 @@ function applyYangSubMode(sub) {
     document.getElementById('plate-yang-' + s).classList.toggle('active', sub === s);
   });
   updateQuickNav();
-  // 出行訣僅限時家；切到日/月/年家時，若標記模式還開著，自動退出標記 UI
-  if (typeof travelMarkingActive !== 'undefined' && travelMarkingActive && sub !== 'time') {
-    exitTravelMarkingModeUI();
-  }
 }
 function setYangSubMode(sub) {
   if (MING_PAN_MODE) exitMingPanMode();
@@ -1557,6 +1566,10 @@ function toggleMingPan() {
 
   // 點「命盤」開啟
   MING_PAN_MODE = true;
+  // 出行訣不適用命盤；標記模式若還開著，自動退出（travelMarks 資料保留，只是畫面收起）
+  if (typeof travelMarkingActive !== 'undefined' && travelMarkingActive) {
+    exitTravelMarkingModeUI();
+  }
   _prevPlateMode = PLATE_MODE;
   _prevPlateSubmode = PLATE_SUBMODE;
   document.getElementById('plate-mingpan').classList.add('active');
@@ -1711,9 +1724,8 @@ function captureChart() {
     // 羅盤已啟用 → 這次點擊不是要開權限，而是詢問是否進入出行訣吉凶標記模式
     if (compassActive) {
       if (typeof travelMarkingActive !== 'undefined' && travelMarkingActive) return; // 標記中不重複詢問
-      // 出行訣僅限陽盤・時家（PLATE_SUBMODE==='time'）；陰盤、日/月/年盤皆不開放，見開發討論
-      if (typeof PLATE_MODE === 'undefined' || PLATE_MODE !== 'yang' || PLATE_SUBMODE !== 'time') {
-        alert('出行訣目前僅支援陽盤・時家，請先切換盤別。');
+      // 出行訣開放給所有陽盤（時/日/月/年家皆可）；僅陰盤、命盤不適用；兩者都永遠不會進出行訣，直接不反應，不跳提示
+      if (typeof PLATE_MODE === 'undefined' || PLATE_MODE !== 'yang' || (typeof MING_PAN_MODE !== 'undefined' && MING_PAN_MODE)) {
         return;
       }
       showTravelAskPanel();
