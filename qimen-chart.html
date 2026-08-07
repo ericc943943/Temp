@@ -318,7 +318,6 @@
   /* 出行訣：吉凶標記（借用 c1r2／gc-left2 這格，跟命盤大限互斥顯示，見 enterTravelMarkingMode） */
   .gc-left2.travel-marking-active { cursor: pointer; }
   .travel-mark-label {
-    display: none;
     font-size: 13px; font-weight: bold;
     font-family: "M PLUS Rounded 1c", sans-serif;
   }
@@ -1123,7 +1122,7 @@
     <div id="g4r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#4caf50;">4</span><span class="house-name" style="color:#4caf50;">巽</span></div><div class="bagua" style="--line-color:#4caf50;"><div class="bline-full"></div><div class="bline-full"></div><div class="bline-broken"><span></span><span></span></div></div></div>
     <div id="g4r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-4"></span></div>
     <div id="g4r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-4"></div></div>
-    <div id="g4r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-4" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-4" class="travel-mark-label"></span></div>
+    <div id="g4r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-4" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-4" class="travel-mark-label" style="display:none;"></span></div>
     <div id="g4r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-4"></span></div>
     <div id="g4r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-4"></span></div>
     <div id="g4r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-4"></div></div>
@@ -1136,7 +1135,7 @@
     <div id="g9r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#c0392b;">9</span><span class="house-name" style="color:#c0392b;">離</span></div><div class="bagua" style="--line-color:#c0392b;"><div class="bline-full"></div><div class="bline-broken"><span></span><span></span></div><div class="bline-full"></div></div></div>
     <div id="g9r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-9"></span></div>
     <div id="g9r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-9"></div></div>
-    <div id="g9r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-9" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-9" class="travel-mark-label"></span></div>
+    <div id="g9r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-9" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-9" class="travel-mark-label" style="display:none;"></span></div>
     <div id="g9r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-9"></span></div>
     <div id="g9r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-9"></span></div>
     <div id="g9r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-9"></div></div>
@@ -1149,7 +1148,7 @@
     <div id="g2r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#a0714f;">2</span><span class="house-name" style="color:#a0714f;">坤</span></div><div class="bagua" style="--line-color:#a0714f;"><div class="bline-broken"><span></span><span></span></div><div class="bline-broken"><span></span><span></span></div><div class="bline-broken"><span></span><span></span></div></div></div>
     <div id="g2r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-2"></span></div>
     <div id="g2r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-2"></div></div>
-    <div id="g2r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-2" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-2" class="travel-mark-label"></span></div>
+    <div id="g2r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-2" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-2" class="travel-mark-label" style="display:none;"></span></div>
     <div id="g2r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-2"></span></div>
     <div id="g2r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-2"></span></div>
     <div id="g2r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-2"></div></div>
@@ -1162,7 +1161,7 @@
     <div id="g3r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#1a7a1a;">3</span><span class="house-name" style="color:#1a7a1a;">震</span></div><div class="bagua" style="--line-color:#1a7a1a;"><div class="bline-broken"><span></span><span></span></div><div class="bline-broken"><span></span><span></span></div><div class="bline-full"></div></div></div>
     <div id="g3r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-3"></span></div>
     <div id="g3r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-3"></div></div>
-    <div id="g3r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-3" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-3" class="travel-mark-label"></span></div>
+    <div id="g3r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-3" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-3" class="travel-mark-label" style="display:none;"></span></div>
     <div id="g3r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-3"></span></div>
     <div id="g3r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-3"></span></div>
     <div id="g3r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-3"></div></div>
@@ -1226,7 +1225,7 @@
     <div id="g7r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#999999;">7</span><span class="house-name" style="color:#999999;">兌</span></div><div class="bagua" style="--line-color:#999999;"><div class="bline-broken"><span></span><span></span></div><div class="bline-full"></div><div class="bline-full"></div></div></div>
     <div id="g7r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-7"></span></div>
     <div id="g7r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-7"></div></div>
-    <div id="g7r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-7" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-7" class="travel-mark-label"></span></div>
+    <div id="g7r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-7" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-7" class="travel-mark-label" style="display:none;"></span></div>
     <div id="g7r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-7"></span></div>
     <div id="g7r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-7"></span></div>
     <div id="g7r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-7"></div></div>
@@ -1239,7 +1238,7 @@
     <div id="g8r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#6b4423;">8</span><span class="house-name" style="color:#6b4423;">艮</span></div><div class="bagua" style="--line-color:#6b4423;"><div class="bline-full"></div><div class="bline-broken"><span></span><span></span></div><div class="bline-broken"><span></span><span></span></div></div></div>
     <div id="g8r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-8"></span></div>
     <div id="g8r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-8"></div></div>
-    <div id="g8r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-8" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-8" class="travel-mark-label"></span></div>
+    <div id="g8r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-8" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-8" class="travel-mark-label" style="display:none;"></span></div>
     <div id="g8r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-8"></span></div>
     <div id="g8r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-8"></span></div>
     <div id="g8r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-8"></div></div>
@@ -1252,7 +1251,7 @@
     <div id="g1r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#2471a3;">1</span><span class="house-name" style="color:#2471a3;">坎</span></div><div class="bagua" style="--line-color:#2471a3;"><div class="bline-broken"><span></span><span></span></div><div class="bline-full"></div><div class="bline-broken"><span></span><span></span></div></div></div>
     <div id="g1r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-1"></span></div>
     <div id="g1r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-1"></div></div>
-    <div id="g1r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-1" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-1" class="travel-mark-label"></span></div>
+    <div id="g1r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-1" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-1" class="travel-mark-label" style="display:none;"></span></div>
     <div id="g1r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-1"></span></div>
     <div id="g1r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-1"></span></div>
     <div id="g1r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-1"></div></div>
@@ -1265,7 +1264,7 @@
     <div id="g6r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#555555;">6</span><span class="house-name" style="color:#555555;">乾</span></div><div class="bagua" style="--line-color:#555555;"><div class="bline-full"></div><div class="bline-full"></div><div class="bline-full"></div></div></div>
     <div id="g6r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-6"></span></div>
     <div id="g6r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-6"></div></div>
-    <div id="g6r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-6" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-6" class="travel-mark-label"></span></div>
+    <div id="g6r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-6" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-6" class="travel-mark-label" style="display:none;"></span></div>
     <div id="g6r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-6"></span></div>
     <div id="g6r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-6"></span></div>
     <div id="g6r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-6"></div></div>
@@ -1756,8 +1755,9 @@ function confirmTravelMarking() {
 TRAVEL_MARK_HOUSES.forEach(h => {
   const cell = document.getElementById('g' + h + 'r2c1');
   if (cell) {
-    cell.addEventListener('click', function() {
+    cell.addEventListener('click', function(e) {
       if (!travelMarkingActive) return;
+      e.stopPropagation(); // 標記模式下不冒泡到外層宮位，避免同時觸發十二長生橘框高亮
       cycleTravelMark(h);
     });
   }
