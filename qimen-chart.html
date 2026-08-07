@@ -1821,7 +1821,9 @@ let inlineTravelPositionMarker = null;
 function initializeInlineTravelMap() {
   if (inlineTravelMap || typeof L === 'undefined') return;
   // 未取得定位前維持中性世界視角；不可預設任何國家或地區
-  inlineTravelMap = L.map('travel-inline-map', { zoomControl: false, attributionControl: false }).setView([20, 0], 2);
+  // dragging:false — 容器整體180度旋轉(南上北下)後拖曳座標判讀會反向，此情境核心需求是「確認方位」不是「瀏覽地圖」，
+  // 拖曳乾脆關掉，靠自動定位置中＋拉回鈕即可，縮放不受旋轉影響，維持開啟
+  inlineTravelMap = L.map('travel-inline-map', { zoomControl: false, attributionControl: false, dragging: false }).setView([20, 0], 2);
   L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
     maxZoom: 20,
     subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
