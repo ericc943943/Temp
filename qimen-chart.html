@@ -931,10 +931,13 @@
   ══════════════════════════════════ */
   .travel-inline-map-wrap { position: absolute; inset: 0; z-index: 0; border-radius: 12px; overflow: hidden; }
   .travel-inline-map { position: absolute; inset: 0; transform: rotate(180deg); /* 預設南上北下，配合盤面慣例；旋轉按鈕（2b）會轉回北上南下 */ }
+  /* 工具列放在方框外、正上方（原引干 yigan-top 佔用的空間），不疊在地圖上擋視線；預設隱藏，僅地圖模式顯示 */
   .travel-inline-toolbar {
-    position: absolute; z-index: 2; top: 8px; left: 8px; right: 8px;
-    display: flex; gap: 8px;
+    display: none;
+    position: absolute; z-index: 5; top: -32px; left: 0; right: 0;
+    justify-content: center; gap: 10px;
   }
+  .outer.travel-map-mode .travel-inline-toolbar { display: flex; }
   .travel-inline-exit, .travel-inline-locate, .travel-inline-board-toggle {
     width: 30px; height: 30px; border-radius: 50%;
     border: none; background: rgba(255,255,255,.92); color: #333;
@@ -1186,13 +1189,15 @@
   <div class="yigan mingpan-label rg-left-c"   id="mp-left-c"   style="display:none;"></div>
   <div class="yigan mingpan-label rg-left-t"   id="mp-left-t"   style="display:none;"></div>
 
+  <!-- 出行訣 階段二：方框上方（原引干位置）的操作列，只在地圖模式顯示 -->
+  <div class="travel-inline-toolbar">
+    <button type="button" class="travel-inline-exit" id="travel-inline-exit" aria-label="返回盤面">←</button>
+    <button type="button" class="travel-inline-board-toggle" id="travel-inline-board-toggle" aria-label="顯示/隱藏盤面">盤</button>
+  </div>
+
   <!-- 出行訣 階段二 2a：方框內嵌地圖。z-index 低於 .grid，透過 .cell 背景透明讓地圖從九宮線縫間透出 -->
   <div class="travel-inline-map-wrap" id="travel-inline-map-wrap" style="display:none;">
     <div class="travel-inline-map" id="travel-inline-map"></div>
-    <div class="travel-inline-toolbar">
-      <button type="button" class="travel-inline-exit" id="travel-inline-exit" aria-label="返回盤面">←</button>
-      <button type="button" class="travel-inline-board-toggle" id="travel-inline-board-toggle" aria-label="顯示/隱藏盤面">盤</button>
-    </div>
     <button type="button" class="travel-inline-locate" id="travel-inline-locate" aria-label="拉回目前位置">◎</button>
   </div>
 
