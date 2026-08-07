@@ -1,0 +1,4039 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<script src="https://cdn.jsdelivr.net/npm/lunar-javascript/lunar.js"></script>
+<link rel="apple-touch-icon" href="icon.PNG">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>奇門遁甲九宮排盤</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-VKV3FP5CRB"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-VKV3FP5CRB');
+</script>
+<script>
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@300;400;500&family=MPLUS1Code:wght@300;400;500&family=Noto+Serif+TC:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  /* ── Reset ── */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── Base ── */
+  body {
+    background: #f5f0e8;
+    font-family: "M PLUS Rounded 1c", sans-serif;
+  }
+  .page {
+    width: 100%;
+    max-width: 440px;
+    margin: 0 auto;
+    padding: 10px 12px 32px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  /* ══════════════════════════════════
+     盤頭 Header  (3欄: 50 / 25 / 25)
+  ══════════════════════════════════ */
+  .header {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    border: 2px solid #111;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+    margin-top: 0;
+    margin-bottom: 16px;
+    width: calc(100% - 12px);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .h-col-top { grid-column: 1; grid-row: 1; padding: 6px 8px; }
+  .h-col-combined {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    border-top: 2px solid #111;
+    padding: 0;
+  }
+  .h-col-combined .hc-groups {
+    display: grid;
+    grid-template-columns: 6fr 5fr 6fr;
+    align-items: stretch;
+  }
+  .h-col-combined .hc-group {
+    display: grid;
+    align-items: center;
+    padding: 6px 6px;
+  }
+  .h-col-combined .hc-group:not(:first-child) {
+    border-left: 1px solid #ddd;
+  }
+  .h-col-combined .hc-group.g6 { grid-template-columns: repeat(6, 1fr); }
+  .h-col-combined .hc-group.g5 { grid-template-columns: repeat(5, 1fr); }
+  .h-col-combined .hl {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: "M PLUS Rounded 1c", sans-serif;
+    font-size: 11px;
+    color: #aaa;
+    line-height: 1.3;
+  }
+  .h-col-combined .hc-pair {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: "M PLUS Rounded 1c", sans-serif;
+    font-size: 11px;
+    color: #333;
+    line-height: 1.3;
+  }
+
+
+  /* table 共用 */
+  .h-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  .h-table tr { line-height: 1.85; }
+  .h-table td {
+    font-family: "M PLUS Rounded 1c", sans-serif;
+    font-size: 11px;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    vertical-align: middle;
+  }
+  /* 標籤欄（右對齊、灰色） */
+  .h-table td.hl {
+    color: #aaa;
+    text-align: center;
+  }
+  /* 內容欄（置中） */
+  .h-table td.hv {
+    text-align: center;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  /* ══════════════════════════════════
+     九宮格外層 + 引干
+  ══════════════════════════════════ */
+  .outer {
+    position: relative;
+    width: calc(100% - 44px);
+    aspect-ratio: 1 / 1;
+    margin: 32px auto 20px;
+  }
+
+  /* 引干：8個方位 */
+  .yigan {
+    position: absolute;
+    font-size: 15px;
+    font-weight: normal;
+    color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  .yigan-top    { top: -20px; left: 50%; transform: translateX(-50%); }
+  .yigan-bottom { bottom: -20px; left: 50%; transform: translateX(-50%); white-space: nowrap; }
+  .yigan-left   { left: -18px; top: 50%; transform: translateY(-50%); flex-direction: column; line-height: 1.2; }
+  .yigan-right  { right: -18px; top: 50%; transform: translateY(-50%); flex-direction: column; line-height: 1.2; }
+  .yigan-tl { top: -20px; left: -16px; }
+  .yigan-tr { top: -20px; right: -16px; }
+  .yigan-bl { bottom: -20px; left: -16px; }
+  .yigan-br { bottom: -20px; right: -16px; }
+
+  /* 命盤模式：12地支固定位置（每邊3個），取代8個引干位置。字級較小以容納2-3字宮位名稱 */
+  .mingpan-label { font-size: 14px; white-space: nowrap; }
+  .rg-top-l    { top: -20px; left: 16.67%; transform: translateX(-50%); }
+  .rg-top-c    { top: -20px; left: 50%;    transform: translateX(-50%); }
+  .rg-top-r    { top: -20px; left: 83.33%; transform: translateX(-50%); }
+  .rg-bottom-l { bottom: -20px; left: 16.67%; transform: translateX(-50%); }
+  .rg-bottom-c { bottom: -20px; left: 50%;    transform: translateX(-50%); }
+  .rg-bottom-r { bottom: -20px; left: 83.33%; transform: translateX(-50%); }
+  .rg-left-t   { top: 16.67%; left: -18px; transform: translateY(-50%); flex-direction: column; line-height: 1.2; }
+  .rg-left-c   { top: 50%;    left: -18px; transform: translateY(-50%); flex-direction: column; line-height: 1.2; }
+  .rg-left-b   { top: 83.33%; left: -18px; transform: translateY(-50%); flex-direction: column; line-height: 1.2; }
+  .rg-right-t  { top: 16.67%; right: -18px; transform: translateY(-50%); flex-direction: column; line-height: 1.2; }
+  .rg-right-c  { top: 50%;    right: -18px; transform: translateY(-50%); flex-direction: column; line-height: 1.2; }
+  .rg-right-b  { top: 83.33%; right: -18px; transform: translateY(-50%); flex-direction: column; line-height: 1.2; }
+
+  /* ══════════════════════════════════
+     九宮 Grid  (3×3 cell wrapper)
+  ══════════════════════════════════ */
+  .grid {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    box-sizing: border-box;
+    position: relative;
+  }
+
+  /* 宮位 wrapper：負責邊框、點擊、高亮 */
+  .cell {
+    border: 1px solid #999;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    background: #fff;
+    cursor: pointer;
+    box-sizing: border-box;
+    overflow: hidden;
+    min-width: 0; min-height: 0;
+  }
+
+  /* 外框粗邊 2px + 圓角 */
+  .grid .cell:nth-child(1),
+  .grid .cell:nth-child(2),
+  .grid .cell:nth-child(3) { border-top:    2px solid #111; }
+  .grid .cell:nth-child(7),
+  .grid .cell:nth-child(8),
+  .grid .cell:nth-child(9) { border-bottom: 2px solid #111; }
+  .grid .cell:nth-child(1),
+  .grid .cell:nth-child(4),
+  .grid .cell:nth-child(7) { border-left:   2px solid #111; }
+  .grid .cell:nth-child(3),
+  .grid .cell:nth-child(6),
+  .grid .cell:nth-child(9) { border-right:  2px solid #111; }
+  .grid .cell:nth-child(1) { border-radius: 12px 0 0 0; }
+  .grid .cell:nth-child(3) { border-radius: 0 12px 0 0; }
+  .grid .cell:nth-child(7) { border-radius: 0 0 0 12px; }
+  .grid .cell:nth-child(9) { border-radius: 0 0 12px 0; }
+
+  /* 高亮 */
+  .cell.highlighted { border-color: #e67e22 !important; background: #fffaf5; }
+
+  /* 每個小格：內格線已依需求清除，只留每宮外框（.cell 的 2px 外框線） */
+  .gc {
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    background: transparent;
+    box-sizing: border-box;
+    overflow: hidden;
+    min-width: 0; min-height: 0;
+  }
+
+  /* 每宮最右欄、最下列不畫線（cell 外框已畫） */
+  .gc[style*="grid-column:3;"] { border-right:  none; }
+  .gc[style*="grid-row:3;"]    { border-bottom: none; }
+
+  /* 中宮 */
+  /* 中宮：改成 relative 定位基準，讓吉凶標記提醒（.travel-marking-banner）可以疊在中宮正中央 */
+  .cell.center { background: #eeebe3; cursor: default; border: none; position: relative; }
+  /* 中宮小格：內格線已依需求清除，四邊外框線（#g5r*c* 那組）維持，負責拼出中宮外框 */
+  .gc-center {
+    background: transparent;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+  }
+  /* 每宮最右欄、最下列不畫線（外框已經有線了），寫法比照 .gc */
+  .gc-center[style*="grid-column:3;"] { border-right:  none; }
+  .gc-center[style*="grid-row:3;"]    { border-bottom: none; }
+  /* col1：加左邊（中宮外框左邊） */
+  #g5r1c1, #g5r2c1, #g5r3c1 { border-left: 1px solid #999; }
+  /* row1：加上邊（中宮外框上邊） */
+  #g5r1c1, #g5r1c2, #g5r1c3 { border-top: 1px solid #999; }
+  /* col3：右邊（中宮外框右邊） */
+  #g5r1c3, #g5r2c3, #g5r3c3 { border-right: 1px solid #999; }
+  /* row3：下邊（中宮外框下邊） */
+  #g5r3c1, #g5r3c2, #g5r3c3 { border-bottom: 1px solid #999; }
+  .tag { font-size: 11px; line-height: 1; margin-top: 1px; }
+  .tag.entombed   { color: #999; font-size: 9px; line-height: 1; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); }
+  .tag.penalized { color: #c0392b; font-size: 9px; line-height: 1; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); }
+  .tag.entombed.has-penalized  { left: 50%; transform: translateX(-100%); }
+  .tag.penalized.has-entombed  { left: 50%; transform: translateX(0%); right: auto; }
+  .stem-mu  { display: inline-block; position: relative; }
+  .stem-char { color: #aaa; }
+  .stem-char.penalized { color: #c0392b; }
+  .tag.gate-constraint   { color: #c0392b; font-size: 9px; line-height: 1; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); }
+  .tag.gate-suppress   { color: #999; font-size: 9px; line-height: 1; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); }
+  .tag.void {
+    color: #c0392b; font-size: 12px; line-height: 1;
+    border: 1px solid #c0392b; border-radius: 50%;
+    width: 22px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tag.horse {
+    color: #2471a3; font-size: 11px; line-height: 1;
+    position: relative; display: inline-flex; align-items: center; justify-content: center;
+  }
+  .tag.horse::before {
+    content: '△';
+    font-size: 28px;
+    color: #2471a3;
+    line-height: 1;
+    position: absolute;
+  }
+  .tag.horse span {
+    position: relative; z-index: 1;
+    font-size: 9px; margin-top: 5px;
+  }
+  /* ── 左上格（宮號＋八卦）── */
+  .gc-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 3px 1px;
+    gap: 2px;
+  }
+  .house-id { display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 2px; }
+  .house-num  { font-size: 13px; font-weight: bold; color: #333; line-height: 1.2; font-family: "MPLUS1Code", monospace; }
+  .house-name { font-size: 13px; color: #555; line-height: 1.2; }
+  .bagua { display: flex; flex-direction: column; gap: 2px; align-items: center; margin-top: 2px; }
+  .bline-full { width: 16px; height: 2px; background: var(--line-color, #444); border-radius: 1px; }
+  .bline-broken { display: flex; gap: 3px; }
+  .bline-broken span { width: 6px; height: 2px; background: var(--line-color, #444); border-radius: 1px; display: block; }
+
+  /* ── 左中（命盤模式：大限歲數區間，平時空白）── 三行堆疊、全部置中，中間夾一條斜線 */
+  .gc-left2 { display: flex; align-items: center; justify-content: center; padding: 2px 3px; }
+  .gc-daxian {
+    display: flex; flex-direction: column; align-items: center;
+    font-size: 11px; color: #999; line-height: 1.15;
+    font-family: "MPLUS1Code", monospace;
+  }
+  .gc-daxian .dx-mid { font-size: 6px; font-weight: 900; -webkit-text-stroke: 0.4px currentColor; }
+  .gc-daxian .dx-end { position: relative; width: 100%; height: 1.15em; }
+  .gc-daxian .dx-num { position: absolute; left: 50%; top: 0; transform: translateX(-50%); }
+  .gc-daxian .dx-suffix { position: absolute; left: 50%; top: 3px; transform: translateX(8px); font-size: 8px; }
+
+  /* 出行訣：吉凶標記顯示在 c1r2／gc-left2 這格（跟命盤大限互斥），但點擊改成整個宮位都能觸發（見下方 JS 綁定） */
+  .cell[data-gong].travel-marking-active { cursor: pointer; }
+  /* 地圖模式下按「盤」鈕顯示盤面時，整個宮位也能點擊修改吉凶（見 travelMarkEditable） */
+  .outer.travel-map-mode.board-visible .cell[data-gong] { cursor: pointer; }
+  .travel-mark-label {
+    font-size: 13px; font-weight: bold;
+    font-family: "M PLUS Rounded 1c", sans-serif;
+  }
+  /* 光暈感只在扇形羅盤（.travel-compass-gua/dir）顯示，這裡（九宮格內的標記）維持純色，不加光暈 */
+  .travel-mark-label.mark-lucky   { color: #FFB700; }
+  .travel-mark-label.mark-unlucky { color: #c0392b; }
+  /* 未標記時的提示：拿掉「吉/凶」斜線，改成上下兩行——吉靠左、凶靠右；字體大小跟已選取時一樣（13px），只用灰色跟實際標記色區分 */
+  .travel-mark-label.mark-placeholder {
+    display: flex; flex-direction: column; align-items: stretch;
+    width: 100%; /* 撐滿 .gc-left2 的寬度，text-align:left/right 才有位移空間可以看出差異 */
+    line-height: 1.05; color: #bbb;
+  }
+  .travel-mark-label.mark-placeholder .travel-mark-line-lucky   { text-align: left; }
+  .travel-mark-label.mark-placeholder .travel-mark-line-unlucky { text-align: right; }
+
+  /* ── 左下（馬）── */
+  .gc-horse {
+    display: flex; flex-direction: row;
+    align-items: center; justify-content: center; gap: 1px;
+  }
+
+  /* ── 中上（神）── */
+  .gc-shen {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: #333;
+  }
+
+  /* ── 中中（星）── */
+  .gc-star {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: #333; gap: 2px;
+  }
+
+  /* ── 中下（門）── */
+  .gc-gate {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: #333;
+  }
+
+  /* ── 右上（空亡）── */
+  .gc-void {
+    display: flex; flex-direction: row;
+    align-items: center; justify-content: center; gap: 1px;
+  }
+
+  /* ── 右中（天盤干）── */
+  .gc-tian {
+    display: flex; flex-direction: row;
+    align-items: center; justify-content: center;
+    font-size: 14px; color: #333;
+  }
+
+  /* ── 右下（地盤干）── */
+  .gc-di {
+    display: flex; flex-direction: row;
+    align-items: center; justify-content: center;
+    font-size: 14px; color: #333;
+  }
+
+  /* ── 中宮地支時鐘盤：每宮內部真正的 3x3 小格 ── */
+  .dz9 { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); width:100%; height:100%; container-type: inline-size; }
+  .dz9-cell { display: flex; align-items: center; justify-content: center; overflow: visible; min-width: 0; min-height: 0; }
+  .dz9-cell.align-left  { justify-content: flex-start; }
+  .dz9-cell.align-right { justify-content: flex-end; }
+  .dz9-branch { font-size: 26.7cqi; color: #333; display: inline-block; line-height: 1; white-space: nowrap; }
+  .dz9-label { font-size: 26.7cqi; line-height: 1; white-space: nowrap; }
+  .dz-center { position: relative; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #bbb; width:100%; height:100%; cursor: pointer; }
+  /* 出行訣旋轉：指針左右各一個小箭頭，2026.08 從獨立的⟳按鈕併入中宮指針（見下方 travel-map-mode 顯示規則） */
+  .compass-rotate-arrow { position: absolute; top: 50%; width: 9px; height: 9px; opacity: 0; transition: opacity .2s ease, color .3s ease; pointer-events: none; color: #999; }
+  .compass-rotate-arrow svg { width: 100%; height: 100%; display: block; }
+  .compass-rotate-arrow.left  { left: -4px; transform: translateY(-50%); }
+  .compass-rotate-arrow.right { right: -4px; transform: translateY(-50%) scaleX(-1); } /* 跟左邊鏡像對稱，同一個圖形轉個方向 */
+  .compass-ring {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    transition: transform 0.15s linear;
+  }
+  .compass-needle {
+    position: absolute;
+    left: 50%;
+    top: 2%;
+    bottom: 2%;
+    width: 30%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    filter: drop-shadow(0 0 0.5px #999);
+  }
+  .needle-half {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    box-sizing: border-box;
+    font-size: 6px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .needle-s {
+    background: #fff;
+    color: #333;
+    clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+    align-items: flex-end;
+    padding-bottom: 1px;
+  }
+  .needle-n {
+    background: #c0392b;
+    color: #fff;
+    clip-path: polygon(0% 0%, 100% 0%, 50% 100%);
+    align-items: flex-start;
+    padding-top: 1px;
+  }
+
+  /* ── 十二長生標籤 ── */
+  .dz9-label.stage-mu    { color: #d6408e; }
+  .dz9-label.stage-good  { color: #2e7d32; }
+  .dz9-label.stage-neutral { color: #999; }
+  .stem-active { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 1px; }
+
+
+    /* ══════════════════════════════════
+     輸入區
+  ══════════════════════════════════ */
+  hr.divider {
+    border: none;
+    border-top: 1px solid #ddd;
+    margin: 16px 0;
+  }
+  .input-area {
+    width: calc(100% - 44px);
+    background: #fff;
+    border: 1px solid #999;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 0;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .input-title {
+    font-size: 13px;
+    color: #aaa;
+    margin-bottom: 10px;
+    text-align: center;
+    letter-spacing: 1px;
+  }
+  .input-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .plate-toggle {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .plate-btn {
+    flex: 1;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #f5f5f5;
+    color: #888;
+    font-size: 12px;
+    padding: 5px 4px;
+    cursor: pointer;
+  }
+  .plate-btn.active {
+    background: #f5f5f5;
+    border: 2px solid #333;
+    color: #333;
+  }
+  .plate-subtoggle {
+    margin-top: -6px;
+  }
+  .plate-subtoggle .plate-btn {
+    background: #fafafa;
+    color: #999;
+  }
+  .plate-subtoggle .plate-btn.active {
+    background: #fafafa;
+    border: 2px solid #666;
+    color: #666;
+  }
+  #plate-yin-row .plate-btn.active {
+    background: #333;
+    border-color: #333;
+    color: #fff;
+  }
+  .input-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .input-row label {
+    font-size: 12px;
+    color: #aaa;
+  }
+  .input-row input {
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 4px 2px;
+    font-size: 16px;
+    text-align: center;
+    font-family: "MPLUS1Code", monospace;
+    color: #333;
+    -moz-appearance: textfield;
+  }
+  .input-row input::-webkit-outer-spin-button,
+  .input-row input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .input-row input.input-error {
+    border: 1px solid #c0392b;
+    background: #fdecea;
+  }
+  .input-error-msg {
+    font-size: 13px;
+    color: #c0392b;
+    text-align: center;
+    margin-top: 8px;
+    display: none;
+  }
+  .input-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+  .btn-now {
+    background: #fff;
+    border: 1.5px solid #888;
+    border-radius: 6px;
+    padding: 8px;
+    font-size: 15px;
+    font-family: inherit;
+    color: #555;
+    cursor: pointer;
+  }
+  .btn-quick {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    padding: 8px 0;
+    font-size: 13px;
+    font-family: inherit;
+    color: #666;
+    cursor: pointer;
+    flex: 1;
+    letter-spacing: .05em;
+  }
+  .btn-quick-row {
+    display: flex;
+    gap: 8px;
+    margin: 10px 0 0;
+  }
+  .btn-quick-spacer {
+    flex: 1;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .btn-start {
+    background: #444;
+    border: none;
+    border-radius: 6px;
+    padding: 8px;
+    font-size: 15px;
+    font-family: inherit;
+    color: #fff;
+    cursor: pointer;
+  }
+
+  /* ── 標題列（標題置中、紀錄按鈕置右） ── */
+  .title-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    margin: 8px 0 12px;
+    width: calc(100% - 12px);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .title-row-text {
+    grid-column: 2;
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+    letter-spacing: 2px;
+    white-space: nowrap;
+  }
+
+  /* ── 盤面紀錄 ── */
+  .btn-records {
+    grid-column: 3;
+    justify-self: end;
+    padding: 5px 12px;
+    border: 1px solid #ddd;
+    border-radius: 16px;
+    background: #fff;
+    color: #666;
+    font-size: 12px;
+    font-family: inherit;
+    letter-spacing: .05em;
+    cursor: pointer;
+  }
+  .records-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.35);
+    z-index: 100;
+  }
+  .records-overlay.open { display: block; }
+  .records-panel {
+    position: absolute;
+    top: 0; right: 0;
+    width: min(240px, 70vw);
+    height: 100%;
+    background: #fff;
+    box-shadow: -2px 0 10px rgba(0,0,0,.15);
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+  }
+  .records-panel-head {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 12px 14px;
+    border-bottom: 1px solid #eee;
+    font-weight: bold;
+    letter-spacing: .1em;
+    color: #333;
+  }
+  .records-panel-head span {
+    grid-column: 2;
+    text-align: center;
+  }
+  .records-panel-close {
+    grid-column: 3;
+    justify-self: end;
+    border: none;
+    background: none;
+    font-size: 18px;
+    color: #999;
+    cursor: pointer;
+    padding: 0 4px;
+  }
+  .records-panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 14px 24px;
+  }
+  .records-section-title {
+    font-size: 12px;
+    color: #999;
+    letter-spacing: .1em;
+    margin: 14px 0 6px;
+    text-align: center;
+  }
+  .rec-field { margin-bottom: 10px; }
+  .rec-field label {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+    text-align: center;
+  }
+  .rec-field textarea {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 6px 8px;
+    font-size: 14px;
+    font-family: inherit;
+    text-align: left;
+    resize: vertical;
+    min-height: 56px;
+  }
+  .rec-field textarea::placeholder {
+    text-align: center;
+  }
+  .rec-choice { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+  .rec-choice button {
+    padding: 5px 14px;
+    border: 1px solid #ddd;
+    border-radius: 16px;
+    background: #fff;
+    color: #666;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .rec-choice button.active {
+    background: #444;
+    border-color: #444;
+    color: #fff;
+  }
+  .rec-save-btn {
+    width: 100%;
+    margin-top: 4px;
+    padding: 9px;
+    border: none;
+    border-radius: 4px;
+    background: #444;
+    color: #fff;
+    font-size: 14px;
+    font-family: inherit;
+    letter-spacing: .1em;
+    cursor: pointer;
+    text-align: center;
+  }
+  .rec-msg {
+    font-size: 12px;
+    margin-top: 6px;
+    min-height: 16px;
+    text-align: center;
+  }
+  .rec-msg.ok { color: #2e7d32; }
+  .rec-msg.err { color: #c0392b; }
+  .rec-item {
+    border: 1px solid #eee;
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+  }
+  .rec-item-time { font-size: 12px; color: #999; font-family: "MPLUS1Code", monospace; }
+  .rec-item-timegrid {
+    font-size: 12px;
+    color: #999;
+  }
+  .rec-item-timegrid .tg-wrap {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+  }
+  .rec-item-timegrid .tg-grid {
+    display: grid;
+    grid-template-columns: repeat(4, auto);
+    column-gap: 14px;
+    row-gap: 2px;
+    justify-items: center;
+  }
+  .rec-item-timegrid .tg-pillar {
+    font-size: 11px;
+    color: #b3b3b3;
+    letter-spacing: 1px;
+  }
+  .rec-item-timegrid .tg-date {
+    font-family: "MPLUS1Code", monospace;
+  }
+  .rec-item-q {
+    margin: 3px 0 4px;
+    color: #333;
+    text-align: center;
+    word-break: break-all;
+  }
+  .rec-item-meta { font-size: 12px; color: #888; text-align: center; }
+  .rec-item-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+    justify-content: center;
+  }
+  .rec-item-actions button {
+    padding: 3px 12px;
+    border: 1px solid #ddd;
+    border-radius: 14px;
+    background: #fff;
+    font-size: 12px;
+    font-family: inherit;
+    color: #666;
+    cursor: pointer;
+  }
+  .rec-item-actions .rec-del { color: #c0392b; border-color: #f0d5d0; }
+  .rec-empty { color: #bbb; font-size: 13px; text-align: center; padding: 12px 0; }
+  .predictor-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .records-section-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 14px 0 6px;
+  }
+  .export-btn {
+    padding: 3px 12px;
+    border: 1px solid #ddd;
+    border-radius: 14px;
+    background: #fff;
+    color: #666;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .export-preview {
+    display: none;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 10px;
+    background: #fafafa;
+  }
+  .export-preview.open { display: block; }
+  .export-preview pre {
+    max-height: 200px;
+    overflow: auto;
+    font-size: 11px;
+    color: #444;
+    white-space: pre-wrap;
+    word-break: break-all;
+    margin: 0 0 8px;
+  }
+  .export-preview-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+  }
+  .export-preview-actions button {
+    padding: 4px 14px;
+    border: 1px solid #ddd;
+    border-radius: 14px;
+    background: #fff;
+    color: #666;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .export-preview-msg {
+    font-size: 11px;
+    color: #2e7d32;
+    text-align: center;
+    margin-top: 6px;
+    min-height: 14px;
+  }
+  .predictor-row .rec-choice button { padding: 4px 12px; font-size: 12px; }
+
+  /* ══════════════════════════════════
+     出行羅盤模式：地圖、方位盤與既有方盤各自渲染，以淡出／淡入製造方變圓的過渡。
+     吉方選取規則尚待確認；此版僅建立可接收宮位選取狀態的羅盤層。
+  ══════════════════════════════════ */
+  .travel-overlay { position: fixed; inset: 0; z-index: 5000; visibility: hidden; opacity: 0; transition: opacity .26s ease, visibility 0s linear .26s; background: #f7f7f7; }
+  .travel-overlay.is-open { visibility: visible; opacity: 1; transition: opacity .26s ease; }
+  /* Leaflet 內部 pane 的 z-index 很高；此層必須建立自己的堆疊環境，不能覆蓋羅盤。 */
+  .travel-map { position: absolute; inset: 0; z-index: 0; opacity: 0; transition: opacity .32s ease .08s; }
+  .travel-overlay.is-open .travel-map { opacity: 1; }
+  .travel-board-layer { position: absolute; inset: 0; z-index: 2; display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0; transform: scale(.82); transition: opacity .2s ease, transform .28s ease; }
+  .travel-overlay.board-visible .travel-board-layer { opacity: 1; transform: scale(1); }
+  /* pointer-events:none：盤面搬進出行羅盤疊層後純粹是過場視覺用，opacity 淡出後底層不可再被誤觸（原本 pointer-events:auto 會讓十二長生等互動在地圖模式下被意外觸發）。 */
+  .travel-board-layer .outer { width: min(82vmin, 520px); margin: 0; pointer-events: none; transition: opacity .22s ease, transform .26s ease; }
+  .travel-overlay.is-opening .travel-board-layer .outer { opacity: 0; transform: scale(.88); }
+  /* left/top 不設 transition：錨定後不論地圖拖曳、縮放、或拖手把調整錨點，圓心都要跟座標即時同步，
+     不能有動畫內插——否則拖曳中會延遲落後、放開後才追上，看起來像「被干擾又自己跳回去」 */
+  .travel-compass { position: absolute; z-index: 3; left: 50%; top: 50%; display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0; transform: translate(-50%,-50%) scale(.82); transition: opacity .28s ease .11s, transform .34s ease .11s; }
+  .travel-overlay.is-open .travel-compass { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+  /* 用 vmax（螢幕長邊）作為基準，橫向裝置放大時才會覆蓋左右與四角。 */
+  .travel-compass-disc { width: var(--travel-compass-size, 88vmax); height: var(--travel-compass-size, 88vmax); flex: 0 0 auto; max-width: none; max-height: none; transition: transform .08s linear; }
+  .travel-compass-disc .travel-compass-gua,
+  .travel-compass-disc .travel-compass-dir,
+  .travel-compass-disc .travel-compass-dot { display: none; }
+  .travel-compass-disc .travel-compass-center { display: none; }
+  /* 文字獨立為固定內圈：圓盤放大時不跟著放大，仍維持在圓心附近。 */
+  .travel-compass-label-disc { position: absolute; width: min(60vmin, 380px); height: min(60vmin, 380px); flex: 0 0 auto; transition: transform .08s linear; }
+  /* 階段三：圓圈扇形設計參考 地圖方位_10.html——飽和色扇形（五行配色）＋白色細分隔線＋外圈邊框 */
+  .travel-compass-sector { fill-opacity: .55; stroke: #fff; stroke-width: 1.2; }
+  .travel-compass-ring { fill: none; stroke: #fff; stroke-width: 1.2; }
+  /* 文字：黑字＋宋體，白色描邊(paint-order:stroke)讓文字在任何底色扇形上都清楚可讀 */
+  .travel-compass-gua, .travel-compass-dir, .travel-compass-dot {
+    font-family: "Noto Serif TC", "PMingLiU", serif;
+    font-weight: bold; text-anchor: middle; dominant-baseline: central;
+    paint-order: stroke; stroke-linejoin: round;
+  }
+  /* 內層：卦名（靠圓心），維持 11.5px */
+  .travel-compass-gua { font-size: 11.5px; stroke: rgba(255,255,255,.95); stroke-width: 3px; }
+  /* 外層：方位字（靠圓周），字體比卦名大 */
+  .travel-compass-dir { font-size: 15px; stroke: rgba(255,255,255,.9); stroke-width: 2.5px; }
+  /* 卦名與方位字中間的分隔點，r 介於兩者之間 */
+  .travel-compass-dot { font-size: 8px; stroke: rgba(255,255,255,.9); stroke-width: 2px; }
+  /* 吉凶標記：標色文字（金＝吉、黑背景下凶改用紅避免混淆），不再整片扇形描邊 */
+  .travel-compass-gua.mark-lucky,   .travel-compass-dir.mark-lucky,   .travel-compass-dot.mark-lucky   { fill: #FFB700; stroke: #fff; stroke-width: 3.5px; }
+  .travel-compass-gua.mark-unlucky, .travel-compass-dir.mark-unlucky, .travel-compass-dot.mark-unlucky { fill: #c0392b; stroke: #fff; stroke-width: 3.5px; }
+  /* 光暈感：疊兩層 drop-shadow（貼近的窄光＋外圍的散光），用 currentColor 自動跟著金/紅走 */
+  .travel-compass-gua.mark-lucky,   .travel-compass-dir.mark-lucky,   .travel-compass-dot.mark-lucky,
+  .travel-compass-gua.mark-unlucky, .travel-compass-dir.mark-unlucky, .travel-compass-dot.mark-unlucky {
+    filter: drop-shadow(0 0 1.5px currentColor) drop-shadow(0 0 4px currentColor);
+  }
+  .travel-toolbar { position: absolute; z-index: 4; top: max(12px, env(safe-area-inset-top)); left: 12px; display: flex; gap: 8px; pointer-events: none; }
+  .travel-toolbar button, .travel-status { pointer-events: auto; border: none; border-radius: 18px; padding: 9px 13px; color: #333; background: rgba(255,255,255,.94); font: 13px "M PLUS Rounded 1c", sans-serif; }
+  /* 狀態文字獨立於工具列之外，置中置頂顯示，不受返回鈕位置影響 */
+  .travel-status { position: absolute; z-index: 4; top: max(12px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); max-width: min(58vw, 240px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .travel-size-control { position: absolute; z-index: 4; right: 12px; bottom: max(18px, env(safe-area-inset-bottom)); width: min(220px, calc(100vw - 24px)); border-radius: 14px; padding: 9px 12px; background: rgba(255,255,255,.94); color: #333; font: 12px "M PLUS Rounded 1c", sans-serif; pointer-events: auto; }
+  .travel-size-control label { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .travel-size-control input { display: block; width: 100%; margin: 7px 0 0; accent-color: #555; }
+  .travel-orientation-card { position: absolute; z-index: 5; left: 12px; right: 12px; bottom: max(16px, env(safe-area-inset-bottom)); display: none; align-items: center; gap: 10px; border-radius: 12px; padding: 12px 14px; background: rgba(255,255,255,.96); font-size: 13px; }
+  .travel-orientation-card.is-visible { display: flex; }
+  .travel-orientation-card span { flex: 1; }
+  .travel-orientation-card button { border: none; border-radius: 8px; padding: 8px 12px; background: #555; color: #fff; }
+  /* 回到目前位置按鈕、圓心錨定開關鈕：改放右下角，疊在「羅盤大小」面板正上方（原本在右上角，2026.08移下來） */
+  .travel-locate-btn, .travel-anchor-toggle { position: absolute; z-index: 4; right: 12px; width: 44px; height: 44px; border-radius: 50%; border: none; font-size: 18px; background: rgba(255,255,255,.94); color: #2471a3; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,.18); pointer-events: auto; }
+  .travel-locate-btn:active, .travel-anchor-toggle:active { background: #eee; }
+  /* 定位鈕貼著羅盤大小面板上緣；錨定鈕疊在定位鈕上方 */
+  .travel-locate-btn { bottom: calc(max(18px, env(safe-area-inset-bottom)) + 78px); }
+  .travel-anchor-toggle { bottom: calc(max(18px, env(safe-area-inset-bottom)) + 130px); }
+  /* 縮放控制搬到右邊，跟定位鈕同一側靠邊 */
+  .travel-overlay .leaflet-top.leaflet-right { top: 12px; }
+  /* 圓心錨定開關鈕啟用態 */
+  .travel-anchor-toggle.active { background: #2471a3; color: #fff; }
+  .travel-anchor-handle {
+    position: absolute; display: none;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: rgba(255,255,255,.92); border: 2.5px solid #d32f2f;
+    transform: translate(-50%, -50%);
+    z-index: 6; pointer-events: auto; cursor: grab;
+    box-shadow: 0 2px 8px rgba(0,0,0,.38);
+  }
+  .travel-anchor-handle:active { cursor: grabbing; }
+  .travel-anchor-handle::after {
+    content: '✥'; position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -48%); font-size: 13px; color: #d32f2f; line-height: 1; pointer-events: none;
+  }
+
+  /* ══════════════════════════════════
+     出行訣：所有提示/確認都用同一種小型泡泡，疊在中宮正中央（.cell.center 是定位基準），不使用原生 confirm()
+  ══════════════════════════════════ */
+  .travel-marking-banner {
+    position: absolute; inset: 8%; z-index: 50; display: none;
+    flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+    background: rgba(255,255,255,.97); border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.25);
+    padding: 10px 8px;
+    font-family: "M PLUS Rounded 1c", sans-serif; font-size: 12px; color: #555;
+  }
+  .travel-marking-banner.is-open { display: flex; }
+  .travel-marking-banner span { white-space: normal; text-align: center; line-height: 1.4; }
+  .travel-marking-banner .travel-marking-actions { display: flex; gap: 8px; }
+  .travel-marking-banner button {
+    border: none; border-radius: 50%; width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: bold; cursor: pointer; font-family: inherit; flex-shrink: 0;
+  }
+  .travel-marking-confirm { background: #2e7d32; color: #fff; }
+  .travel-marking-cancel  { background: #eee; color: #555; }
+
+  /* ══════════════════════════════════
+     出行訣 階段二 2a：方框內嵌地圖
+     .outer 本身固定在原九宮框範圍內；地圖填滿整個 .outer，九宮格線／r1c1標籤疊在地圖之上。
+  ══════════════════════════════════ */
+  .travel-inline-map-wrap { position: absolute; inset: 0; z-index: 0; border-radius: 12px; overflow: hidden; }
+  .travel-inline-map { position: absolute; inset: 0; transform: rotate(180deg); transition: transform .5s ease; /* 預設南上北下，配合盤面慣例；旋轉按鈕（2b）平滑轉為北上南下 */ }
+  /* 2b 旋轉狀態：地圖轉正（北上南下）。宮位內容對調（4↔6、9↔1、2↔8、7↔3）由 JS 直接搬動 DOM 節點完成，不靠 CSS。 */
+  .outer.travel-map-mode.travel-map-rotated .travel-inline-map { transform: rotate(0deg); }
+  /* 工具列放在方框外、正上方（原引干 yigan-top 佔用的空間），不疊在地圖上擋視線；預設隱藏，僅地圖模式顯示 */
+  .travel-inline-toolbar {
+    display: none;
+    position: absolute; z-index: 5; top: -32px; left: 16.667%; transform: translateX(-50%);
+    justify-content: center; gap: 10px;
+  }
+  .outer.travel-map-mode .travel-inline-toolbar { display: flex; }
+  .travel-inline-exit, .travel-inline-locate, .travel-inline-board-toggle, .travel-inline-fullscreen {
+    width: 30px; height: 30px; border-radius: 50%;
+    border: none; background: rgba(255,255,255,.92); color: #333;
+    font-size: 15px; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,.2); flex-shrink: 0;
+  }
+  .travel-inline-board-toggle { font-size: 12px; }
+  .travel-inline-board-toggle.active { background: #2471a3; color: #fff; }
+  .travel-inline-locate { position: absolute; z-index: 2; bottom: 8px; right: 8px; color: #2471a3; }
+  /* 階段三：全螢幕展開鈕，方框右上角，只在地圖模式（.travel-map-mode）常駐顯示，跟旋轉/盤面狀態無關 */
+  .travel-inline-fullscreen { display: none; position: absolute; z-index: 5; top: -8px; right: -8px; font-size: 13px; }
+  .outer.travel-map-mode .travel-inline-fullscreen { display: flex; }
+  .travel-inline-exit:active, .travel-inline-locate:active, .travel-inline-board-toggle:active, .travel-inline-fullscreen:active { opacity: .85; }
+
+  /* 地圖模式：九宮格線（.cell 邊框）與 r1c1 宮位標籤留在畫面上，其餘內容透明化／隱藏，讓地圖從縫間透出 */
+  .outer.travel-map-mode .grid { position: relative; z-index: 1; pointer-events: none; }
+  /* 盤面顯示時，整個宮位都要能點擊修改吉凶（見 travelMarkEditable）——.grid 整體 pointer-events:none 會連帶擋掉，這裡單獨救回來 */
+  .outer.travel-map-mode.board-visible .cell[data-gong] { pointer-events: auto; }
+  .outer.travel-map-mode .cell { background: transparent; }
+  .outer.travel-map-mode .gc-shen,
+  .outer.travel-map-mode .gc-star,
+  .outer.travel-map-mode .gc-gate,
+  .outer.travel-map-mode .gc-void,
+  .outer.travel-map-mode .gc-tian,
+  .outer.travel-map-mode .gc-horse,
+  .outer.travel-map-mode .gc-di,
+  .outer.travel-map-mode .gc-left2 {
+    visibility: hidden;
+  }
+  /* 中宮比較特殊：.cell.center 本身 border:none，外框線是靠中宮內部 9 個小格(.gc-center)各自的邊框拼出來的，
+     所以中宮不能整格 visibility:hidden（會連邊框一起藏掉），只藏裡面的內容（地支時鐘、指南針） */
+  .outer.travel-map-mode .yigan {
+    visibility: hidden; /* 出行訣用不到引干，地圖模式下先藏起來；「盤」開關開啟時屬於盤面資訊的一部分，一併現形 */
+  }
+  .outer.travel-map-mode.board-visible .yigan {
+    visibility: visible;
+  }
+  .outer.travel-map-mode .gc-center .dz9 {
+    visibility: hidden; /* 地支時鐘文字地圖模式用不到；指針(.dz-center)則保留顯示，見下方「指針」區塊 */
+  }
+  /* 中宮內部本來還有一圈#ccc細格線（地支時鐘的分格線），地圖模式下一併拿掉，只留外框（外框走ID選擇器，優先度較高不受影響） */
+  .outer.travel-map-mode .gc-center {
+    border-right: none;
+    border-bottom: none;
+  }
+  .outer.travel-map-mode .gc-left {
+    background: rgba(255,255,255,.74); border-radius: 0 0 8px 0;
+  }
+  /* 指針(.dz-center)在地圖模式下維持顯示，讓使用者知道上方離9是南、下方坎1是北（跟九宮方位對照），
+     跟地圖是疊在一起的兩層投影片：指針固定跟九宮同步，不跟即時裝置朝向連動，只有點中宮（＝旋轉）時才一起翻轉
+     （見 JS setTravelCompassOrientation／travelCompassFrozen）。藍點（目前位置）另外保留，兩者並存。
+     過渡時間拉長跟地圖的 0.5s 同步，翻轉手感一致。 */
+  .outer.travel-map-mode .compass-ring { transition: transform .5s ease; }
+  /* 旋轉箭頭：只在方框內嵌地圖模式顯示（不含全螢幕扇形羅盤，見需求）；
+     用 #paipan-result 限定原始位置，出行訣全螢幕會把 .outer 節點暫時搬進 #travel-board-layer，
+     搬過去後這條規則自然不再命中，順便讓中宮在全螢幕快照期間維持不可點擊，不需要另外加 JS 判斷 */
+  #paipan-result .outer.travel-map-mode .compass-rotate-arrow { opacity: .8; }
+  #paipan-result .outer.travel-map-mode.travel-map-rotated .compass-rotate-arrow { color: #2471a3; }
+  /* 中宮點擊：地圖模式下 .grid 整體 pointer-events:none（見上方規則），這裡單獨救回中宮指針，讓點擊可以觸發旋轉 */
+  #paipan-result .outer.travel-map-mode .dz-center { pointer-events: auto; }
+
+  /* 盤面顯示/隱藏：點右上角「盤」鈕切換，半透明疊加在地圖上方，固定在同一塊九宮框內，不出框 */
+  .outer.travel-map-mode.board-visible .cell {
+    background: rgba(255,255,255,.70);
+  }
+  .outer.travel-map-mode.board-visible .gc-shen,
+  .outer.travel-map-mode.board-visible .gc-star,
+  .outer.travel-map-mode.board-visible .gc-gate,
+  .outer.travel-map-mode.board-visible .gc-void,
+  .outer.travel-map-mode.board-visible .gc-tian,
+  .outer.travel-map-mode.board-visible .gc-horse,
+  .outer.travel-map-mode.board-visible .gc-di,
+  .outer.travel-map-mode.board-visible .gc-left2,
+  .outer.travel-map-mode.board-visible .gc-center .dz9 {
+    visibility: visible;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+<!-- 標題 -->
+<div class="title-row">
+  <div class="title-row-text">奇門遁甲九宮排盤</div>
+  <button class="btn-records" onclick="openRecordsPanel()">紀錄</button>
+</div>
+
+<!-- 盤面紀錄面板 -->
+<div class="records-overlay" id="records-overlay" onclick="if(event.target===this)closeRecordsPanel()">
+  <div class="records-panel">
+    <div class="records-panel-head">
+      <span>盤面紀錄</span>
+      <button class="records-panel-close" onclick="closeRecordsPanel()">✕</button>
+    </div>
+    <div class="records-panel-body">
+
+      <div class="records-section-title">儲存目前盤面</div>
+      <div class="rec-field">
+        <label>盤面時間（自動帶入）</label>
+        <div id="rec-chart-time" style="color:#333; text-align:center;">—</div>
+      </div>
+      <div class="rec-field">
+        <label>問題描述</label>
+        <textarea id="rec-question" placeholder="輸入問題描述"></textarea>
+      </div>
+      <div class="rec-field">
+        <label>案主</label>
+        <div class="rec-choice" id="rec-client-gender">
+          <button data-val="男" onclick="pickClientChoice(this)">男性</button>
+          <button data-val="女" onclick="pickClientChoice(this)">女性</button>
+          <button data-val="自測" onclick="pickClientChoice(this)">自測</button>
+        </div>
+      </div>
+      <div class="rec-field">
+        <label>測法</label>
+        <div class="rec-choice" id="rec-method">
+          <button data-val="面測" onclick="pickChoice(this)">面測</button>
+          <button data-val="遠測" onclick="pickChoice(this)">遠測</button>
+          <button data-val="代測" onclick="pickChoice(this)">代測</button>
+        </div>
+      </div>
+      <button class="rec-save-btn" onclick="saveRecord()">儲存</button>
+      <div class="rec-msg" id="rec-msg"></div>
+
+      <div class="records-section-title">預測師性別</div>
+      <div class="predictor-row">
+        <div class="rec-choice" id="rec-predictor-gender">
+          <button data-val="男" onclick="setPredictorGender('男')">男性</button>
+          <button data-val="女" onclick="setPredictorGender('女')">女性</button>
+        </div>
+      </div>
+
+      <div class="records-section-title-row">
+        <span class="records-section-title" style="margin:0;">已存紀錄</span>
+        <button class="export-btn" onclick="toggleExportPreview()">匯出</button>
+      </div>
+      <div class="export-preview" id="export-preview"></div>
+      <div id="rec-list"></div>
+
+    </div>
+  </div>
+</div>
+<!-- 輸入區 -->
+<div class="input-area">
+  <div class="input-title">起盤時間</div>
+  <div class="input-grid">
+    <div class="input-row">
+      <label>年</label>
+      <input type="tel" id="year"  maxlength="4" inputmode="numeric">
+    </div>
+    <div class="input-row">
+      <label>月</label>
+      <input type="tel" id="month"  maxlength="2" inputmode="numeric">
+    </div>
+    <div class="input-row">
+      <label>日</label>
+      <input type="tel" id="day"  maxlength="2" inputmode="numeric">
+    </div>
+    <div class="input-row">
+      <label>時</label>
+      <input type="tel" id="hour"  maxlength="2" inputmode="numeric">
+    </div>
+    <div class="input-row">
+      <label>分</label>
+      <input type="tel" id="minute"  maxlength="2" inputmode="numeric">
+    </div>
+  </div>
+  <div class="plate-toggle" id="plate-toggle">
+    <button type="button" class="plate-btn" id="plate-yang" onclick="setPlateMode('yang')">陽盤</button>
+    <button type="button" class="plate-btn" id="plate-mingpan" onclick="toggleMingPan()">命盤</button>
+  </div>
+  <div class="plate-toggle plate-subtoggle" id="plate-yin-row">
+    <button type="button" class="plate-btn active" id="plate-yin" onclick="setPlateMode('yin')">陰盤</button>
+  </div>
+  <div class="plate-toggle plate-subtoggle" id="plate-subtoggle" style="display:none;">
+    <button type="button" class="plate-btn active" id="plate-yang-time" onclick="setYangSubMode('time')">時家(置閏)</button>
+    <button type="button" class="plate-btn" id="plate-yang-day" onclick="setYangSubMode('day')">日家</button>
+    <button type="button" class="plate-btn" id="plate-yang-month" onclick="setYangSubMode('month')">月家</button>
+    <button type="button" class="plate-btn" id="plate-yang-year" onclick="setYangSubMode('year')">年家</button>
+  </div>
+  <div class="plate-toggle plate-subtoggle" id="mingpan-gender-toggle" style="display:none;">
+    <button type="button" class="plate-btn active" id="mingpan-male" onclick="setMingPanGender('male')">男命</button>
+    <button type="button" class="plate-btn" id="mingpan-female" onclick="setMingPanGender('female')">女命</button>
+  </div>
+  <div class="input-buttons">
+    <button class="btn-now" onclick="resetChart()">重置</button>
+    <button class="btn-start" onclick="clearHighlight();castChart()">排盤</button>
+    <button class="btn-now" onclick="setNow()">現時</button>
+  </div>
+  <div class="input-error-msg" id="input-error-msg"></div>
+</div>
+
+<hr class="divider">
+<!-- 盤面（預設隱藏）-->
+<div id="paipan-result" style="display:block;">
+
+<div class="header">
+  <div class="h-col-top">
+    <table class="h-table">
+      <tr>
+        <td class="hl">西元</td><td class="hv" id="sy">—</td><td class="hv" id="sm">—</td><td class="hv" id="sd">—</td><td class="hv" id="st">—</td>
+        <td class="hl">排盤</td><td class="hv" id="hb-fuyin">—</td><td class="hl">局數</td><td class="hv" id="hb-qiju">—</td><td class="hl">旬首</td><td class="hv" id="hb-xun">—</td>
+      </tr>
+      <tr>
+        <td class="hl">農曆</td><td class="hv" id="ly">—</td><td class="hv" id="lm">—</td><td class="hv" id="ld">—</td><td class="hv" id="lt">—</td>
+        <td class="hl">符頭</td><td class="hv" id="hb-dutyStem">—</td><td class="hl">值符</td><td class="hv" id="hb-zhifu">—</td><td class="hl">值使</td><td class="hv" id="hb-zhishi">—</td>
+      </tr>
+      <tr>
+        <td class="hl">天干</td><td class="hv" id="gz-y-gan">—</td><td class="hv" id="gz-m-gan">—</td><td class="hv" id="gz-d-gan">—</td><td class="hv" id="gz-h-gan">—</td>
+        <td class="hl">空亡</td><td class="hv" id="hb-voidBranches">—</td><td class="hl">驛馬</td><td class="hv" id="hb-travel-horse">—</td><td class="hl">用神</td><td class="hv" id="hb-yongshen">—</td>
+      </tr>
+      <tr>
+        <td class="hl">地支</td><td class="hv" id="gz-y-zhi">—</td><td class="hv" id="gz-m-zhi">—</td><td class="hv" id="gz-d-zhi">—</td><td class="hv" id="gz-h-zhi">—</td>
+        <td class="hl">標記</td><td class="hv" colspan="5" id="hb-marker">—</td>
+      </tr>
+    </table>
+  </div>
+  <div class="h-col-combined">
+    <div class="hc-groups">
+      <div class="hc-group g6">
+        <span class="hl"><span>陰</span><span>陽</span></span>
+        <span class="hc-pair"><span>甲</span><span>乙</span></span>
+        <span class="hc-pair"><span>丙</span><span>丁</span></span>
+        <span class="hc-pair"><span>戊</span><span>己</span></span>
+        <span class="hc-pair"><span>庚</span><span>辛</span></span>
+        <span class="hc-pair"><span>壬</span><span>癸</span></span>
+      </div>
+      <div class="hc-group g5">
+        <span class="hl"><span>沖</span><span>格</span></span>
+        <span class="hc-pair"><span>甲</span><span>庚</span></span>
+        <span class="hc-pair"><span>乙</span><span>辛</span></span>
+        <span class="hc-pair"><span>丙</span><span>壬</span></span>
+        <span class="hc-pair"><span>丁</span><span>癸</span></span>
+      </div>
+      <div class="hc-group g6">
+        <span class="hl"><span>合</span><span>干</span></span>
+        <span class="hc-pair"><span>甲</span><span>己</span></span>
+        <span class="hc-pair"><span>乙</span><span>庚</span></span>
+        <span class="hc-pair"><span>丙</span><span>辛</span></span>
+        <span class="hc-pair"><span>丁</span><span>壬</span></span>
+        <span class="hc-pair"><span>戊</span><span>癸</span></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="outer" id="outer-board">
+
+  <div class="yigan yigan-top"    id="yin-9"></div>
+  <div class="yigan yigan-bottom" id="yin-1"></div>
+  <div class="yigan yigan-left"   id="yin-3"></div>
+  <div class="yigan yigan-right"  id="yin-7"></div>
+  <div class="yigan yigan-tl"     id="yin-4"></div>
+  <div class="yigan yigan-tr"     id="yin-2"></div>
+  <div class="yigan yigan-bl"     id="yin-8"></div>
+  <div class="yigan yigan-br"     id="yin-6"></div>
+  <!-- 命盤模式：12地支固定位置的人事宮位標籤，取代上方8個引干欄位 -->
+  <div class="yigan mingpan-label rg-top-l"    id="mp-top-l"    style="display:none;"></div>
+  <div class="yigan mingpan-label rg-top-c"    id="mp-top-c"    style="display:none;"></div>
+  <div class="yigan mingpan-label rg-top-r"    id="mp-top-r"    style="display:none;"></div>
+  <div class="yigan mingpan-label rg-right-t"  id="mp-right-t"  style="display:none;"></div>
+  <div class="yigan mingpan-label rg-right-c"  id="mp-right-c"  style="display:none;"></div>
+  <div class="yigan mingpan-label rg-right-b"  id="mp-right-b"  style="display:none;"></div>
+  <div class="yigan mingpan-label rg-bottom-r" id="mp-bottom-r" style="display:none;"></div>
+  <div class="yigan mingpan-label rg-bottom-c" id="mp-bottom-c" style="display:none;"></div>
+  <div class="yigan mingpan-label rg-bottom-l" id="mp-bottom-l" style="display:none;"></div>
+  <div class="yigan mingpan-label rg-left-b"   id="mp-left-b"   style="display:none;"></div>
+  <div class="yigan mingpan-label rg-left-c"   id="mp-left-c"   style="display:none;"></div>
+  <div class="yigan mingpan-label rg-left-t"   id="mp-left-t"   style="display:none;"></div>
+
+  <!-- 出行訣 階段二：方框上方（原引干位置）的操作列，只在地圖模式顯示 -->
+  <div class="travel-inline-toolbar">
+    <button type="button" class="travel-inline-exit" id="travel-inline-exit" aria-label="返回盤面">←</button>
+    <button type="button" class="travel-inline-board-toggle" id="travel-inline-board-toggle" aria-label="顯示/隱藏盤面">盤</button>
+  </div>
+  <!-- 出行訣 階段三：全螢幕展開鈕，方框右上角，點擊後進入既有的全螢幕扇形羅盤（travel-overlay） -->
+  <button type="button" class="travel-inline-fullscreen" id="travel-inline-fullscreen" aria-label="展開全螢幕羅盤">⛶</button>
+
+  <!-- 出行訣 階段二 2a：方框內嵌地圖。z-index 低於 .grid，透過 .cell 背景透明讓地圖從九宮線縫間透出 -->
+  <div class="travel-inline-map-wrap" id="travel-inline-map-wrap" style="display:none;">
+    <div class="travel-inline-map" id="travel-inline-map"></div>
+    <button type="button" class="travel-inline-locate" id="travel-inline-locate" aria-label="拉回目前位置">◎</button>
+  </div>
+
+  <div class="grid">
+    <!-- 4 巽 -->
+    <div class="cell" data-gong="4">
+    <div id="g4r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#4caf50;">4</span><span class="house-name" style="color:#4caf50;">巽</span></div><div class="bagua" style="--line-color:#4caf50;"><div class="bline-full"></div><div class="bline-full"></div><div class="bline-broken"><span></span><span></span></div></div></div>
+    <div id="g4r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-4"></span></div>
+    <div id="g4r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-4"></div></div>
+    <div id="g4r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-4" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-4" class="travel-mark-label" style="display:none;"></span></div>
+    <div id="g4r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-4"></span></div>
+    <div id="g4r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-4"></span></div>
+    <div id="g4r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-4"></div></div>
+    <div id="g4r3c2" class="gc gc-gate" style="grid-column:2;grid-row:3;"><span id="gate-4"></span></div>
+    <div id="g4r3c3" class="gc gc-di" style="grid-column:3;grid-row:3;"><span id="di-4"></span></div>
+    </div>
+
+    <!-- 9 離 -->
+    <div class="cell" data-gong="9">
+    <div id="g9r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#c0392b;">9</span><span class="house-name" style="color:#c0392b;">離</span></div><div class="bagua" style="--line-color:#c0392b;"><div class="bline-full"></div><div class="bline-broken"><span></span><span></span></div><div class="bline-full"></div></div></div>
+    <div id="g9r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-9"></span></div>
+    <div id="g9r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-9"></div></div>
+    <div id="g9r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-9" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-9" class="travel-mark-label" style="display:none;"></span></div>
+    <div id="g9r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-9"></span></div>
+    <div id="g9r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-9"></span></div>
+    <div id="g9r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-9"></div></div>
+    <div id="g9r3c2" class="gc gc-gate" style="grid-column:2;grid-row:3;"><span id="gate-9"></span></div>
+    <div id="g9r3c3" class="gc gc-di" style="grid-column:3;grid-row:3;"><span id="di-9"></span></div>
+    </div>
+
+    <!-- 2 坤 -->
+    <div class="cell" data-gong="2">
+    <div id="g2r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#a0714f;">2</span><span class="house-name" style="color:#a0714f;">坤</span></div><div class="bagua" style="--line-color:#a0714f;"><div class="bline-broken"><span></span><span></span></div><div class="bline-broken"><span></span><span></span></div><div class="bline-broken"><span></span><span></span></div></div></div>
+    <div id="g2r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-2"></span></div>
+    <div id="g2r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-2"></div></div>
+    <div id="g2r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-2" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-2" class="travel-mark-label" style="display:none;"></span></div>
+    <div id="g2r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-2"></span></div>
+    <div id="g2r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-2"></span></div>
+    <div id="g2r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-2"></div></div>
+    <div id="g2r3c2" class="gc gc-gate" style="grid-column:2;grid-row:3;"><span id="gate-2"></span></div>
+    <div id="g2r3c3" class="gc gc-di" style="grid-column:3;grid-row:3;"><span id="di-2"></span></div>
+    </div>
+
+    <!-- 3 震 -->
+    <div class="cell" data-gong="3">
+    <div id="g3r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#1a7a1a;">3</span><span class="house-name" style="color:#1a7a1a;">震</span></div><div class="bagua" style="--line-color:#1a7a1a;"><div class="bline-broken"><span></span><span></span></div><div class="bline-broken"><span></span><span></span></div><div class="bline-full"></div></div></div>
+    <div id="g3r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-3"></span></div>
+    <div id="g3r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-3"></div></div>
+    <div id="g3r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-3" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-3" class="travel-mark-label" style="display:none;"></span></div>
+    <div id="g3r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-3"></span></div>
+    <div id="g3r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-3"></span></div>
+    <div id="g3r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-3"></div></div>
+    <div id="g3r3c2" class="gc gc-gate" style="grid-column:2;grid-row:3;"><span id="gate-3"></span></div>
+    <div id="g3r3c3" class="gc gc-di" style="grid-column:3;grid-row:3;"><span id="di-3"></span></div>
+    </div>
+
+    <!-- 5 中 -->
+    <div class="cell center">
+    <!-- 出行訣：三個確認/提示泡泡都疊在中宮正中央（.cell.center 是定位基準，見 CSS），共用同一種小型泡泡樣式 -->
+    <div class="travel-marking-banner" id="travel-ask-panel">
+      <span>確定載入出行訣圖資？</span>
+      <div class="travel-marking-actions">
+        <button type="button" class="travel-marking-cancel"  onclick="confirmTravelAsk(false)" aria-label="否">✕</button>
+        <button type="button" class="travel-marking-confirm" onclick="confirmTravelAsk(true)" aria-label="是">✓</button>
+      </div>
+    </div>
+    <div class="travel-marking-banner" id="yang-submode-confirm">
+      <span>切換將重置盤面與吉凶標記。</span>
+      <div class="travel-marking-actions">
+        <button type="button" class="travel-marking-cancel"  onclick="hideYangSubSwitchConfirm()" aria-label="否">✕</button>
+        <button type="button" class="travel-marking-confirm" onclick="confirmYangSubSwitch()" aria-label="是">✓</button>
+      </div>
+    </div>
+    <div class="travel-marking-banner" id="travel-marking-banner">
+      <span>點擊各宮位標記吉凶</span>
+      <div class="travel-marking-actions">
+        <button type="button" class="travel-marking-cancel"  onclick="cancelTravelMarking()" aria-label="取消">✕</button>
+        <button type="button" class="travel-marking-confirm" onclick="confirmTravelMarking()" aria-label="確認">✓</button>
+      </div>
+    </div>
+    <div id="g5r1c1" class="gc gc-center" style="grid-column:1;grid-row:1;"><div class="dz9">
+      <div class="dz9-cell" style="grid-column:3;grid-row:1;"><span class="dz9-branch" data-dz="巳">巳</span></div>
+      <div class="dz9-cell align-right" style="grid-column:1 / span 2;grid-row:1;"><span class="dz9-label" data-dz-label="巳"></span></div>
+      <div class="dz9-cell" style="grid-column:1;grid-row:3;"><span class="dz9-branch" data-dz="辰">辰</span></div>
+      <div class="dz9-cell align-left" style="grid-column:2 / span 2;grid-row:3;"><span class="dz9-label" data-dz-label="辰"></span></div>
+    </div></div>
+    <div id="g5r1c2" class="gc gc-center" style="grid-column:2;grid-row:1;"><div class="dz9">
+      <div class="dz9-cell" style="grid-column:2;grid-row:1;"><span class="dz9-branch" data-dz="午">午</span></div>
+      <div class="dz9-cell" style="grid-column:1 / span 3;grid-row:2;"><span class="dz9-label" data-dz-label="午"></span></div>
+    </div></div>
+    <div id="g5r1c3" class="gc gc-center" style="grid-column:3;grid-row:1;"><div class="dz9">
+      <div class="dz9-cell" style="grid-column:1;grid-row:1;"><span class="dz9-branch" data-dz="未">未</span></div>
+      <div class="dz9-cell align-left" style="grid-column:2 / span 2;grid-row:1;"><span class="dz9-label" data-dz-label="未"></span></div>
+      <div class="dz9-cell" style="grid-column:3;grid-row:3;"><span class="dz9-branch" data-dz="申">申</span></div>
+      <div class="dz9-cell align-right" style="grid-column:1 / span 2;grid-row:3;"><span class="dz9-label" data-dz-label="申"></span></div>
+    </div></div>
+    <div id="g5r2c1" class="gc gc-center" style="grid-column:1;grid-row:2;"><div class="dz9">
+      <div class="dz9-cell" style="grid-column:1;grid-row:2;"><span class="dz9-branch" data-dz="卯">卯</span></div>
+      <div class="dz9-cell align-left" style="grid-column:2 / span 2;grid-row:2;"><span class="dz9-label" data-dz-label="卯"></span></div>
+    </div></div>
+    <div id="g5r2c2" class="gc gc-center" style="grid-column:2;grid-row:2;"><div class="dz-center" id="compassCell" title="點擊啟用指南針">
+      <div class="compass-ring" id="compassRing"><div class="compass-needle">
+        <div class="needle-half needle-s">S</div>
+        <div class="needle-half needle-n">N</div>
+      </div></div>
+      <!-- 出行訣旋轉：2026.08 併入指針左右，只在方框內嵌地圖模式顯示（見 CSS #paipan-result .outer.travel-map-mode .compass-rotate-arrow），點整個中宮即可觸發 -->
+      <span class="compass-rotate-arrow left" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 1 2.6 5.9"/><path d="M4 17v-5h5"/></svg></span>
+      <span class="compass-rotate-arrow right" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 1 2.6 5.9"/><path d="M4 17v-5h5"/></svg></span>
+      <span id="daxian-5" class="gc-daxian mingpan-label" style="display:none;"></span>
+    </div></div>
+    <div id="g5r2c3" class="gc gc-center" style="grid-column:3;grid-row:2;"><div class="dz9">
+      <div class="dz9-cell" style="grid-column:3;grid-row:2;"><span class="dz9-branch" data-dz="酉">酉</span></div>
+      <div class="dz9-cell align-right" style="grid-column:1 / span 2;grid-row:2;"><span class="dz9-label" data-dz-label="酉"></span></div>
+    </div></div>
+    <div id="g5r3c1" class="gc gc-center" style="grid-column:1;grid-row:3;"><div class="dz9">
+      <div class="dz9-cell" style="grid-column:1;grid-row:1;"><span class="dz9-branch" data-dz="寅">寅</span></div>
+      <div class="dz9-cell align-left" style="grid-column:2 / span 2;grid-row:1;"><span class="dz9-label" data-dz-label="寅"></span></div>
+      <div class="dz9-cell" style="grid-column:3;grid-row:3;"><span class="dz9-branch" data-dz="丑">丑</span></div>
+      <div class="dz9-cell align-right" style="grid-column:1 / span 2;grid-row:3;"><span class="dz9-label" data-dz-label="丑"></span></div>
+    </div></div>
+    <div id="g5r3c2" class="gc gc-center" style="grid-column:2;grid-row:3;"><div class="dz9">
+      <div class="dz9-cell" style="grid-column:2;grid-row:3;"><span class="dz9-branch" data-dz="子">子</span></div>
+      <div class="dz9-cell" style="grid-column:1 / span 3;grid-row:2;"><span class="dz9-label" data-dz-label="子"></span></div>
+    </div></div>
+    <div id="g5r3c3" class="gc gc-center" style="grid-column:3;grid-row:3;"><div class="dz9">
+      <div class="dz9-cell" style="grid-column:3;grid-row:1;"><span class="dz9-branch" data-dz="戌">戌</span></div>
+      <div class="dz9-cell align-right" style="grid-column:1 / span 2;grid-row:1;"><span class="dz9-label" data-dz-label="戌"></span></div>
+      <div class="dz9-cell" style="grid-column:1;grid-row:3;"><span class="dz9-branch" data-dz="亥">亥</span></div>
+      <div class="dz9-cell align-left" style="grid-column:2 / span 2;grid-row:3;"><span class="dz9-label" data-dz-label="亥"></span></div>
+    </div></div>
+    </div>
+
+    <!-- 7 兌 -->
+    <div class="cell" data-gong="7">
+    <div id="g7r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#999999;">7</span><span class="house-name" style="color:#999999;">兌</span></div><div class="bagua" style="--line-color:#999999;"><div class="bline-broken"><span></span><span></span></div><div class="bline-full"></div><div class="bline-full"></div></div></div>
+    <div id="g7r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-7"></span></div>
+    <div id="g7r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-7"></div></div>
+    <div id="g7r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-7" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-7" class="travel-mark-label" style="display:none;"></span></div>
+    <div id="g7r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-7"></span></div>
+    <div id="g7r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-7"></span></div>
+    <div id="g7r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-7"></div></div>
+    <div id="g7r3c2" class="gc gc-gate" style="grid-column:2;grid-row:3;"><span id="gate-7"></span></div>
+    <div id="g7r3c3" class="gc gc-di" style="grid-column:3;grid-row:3;"><span id="di-7"></span></div>
+    </div>
+
+    <!-- 8 艮 -->
+    <div class="cell" data-gong="8">
+    <div id="g8r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#6b4423;">8</span><span class="house-name" style="color:#6b4423;">艮</span></div><div class="bagua" style="--line-color:#6b4423;"><div class="bline-full"></div><div class="bline-broken"><span></span><span></span></div><div class="bline-broken"><span></span><span></span></div></div></div>
+    <div id="g8r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-8"></span></div>
+    <div id="g8r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-8"></div></div>
+    <div id="g8r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-8" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-8" class="travel-mark-label" style="display:none;"></span></div>
+    <div id="g8r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-8"></span></div>
+    <div id="g8r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-8"></span></div>
+    <div id="g8r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-8"></div></div>
+    <div id="g8r3c2" class="gc gc-gate" style="grid-column:2;grid-row:3;"><span id="gate-8"></span></div>
+    <div id="g8r3c3" class="gc gc-di" style="grid-column:3;grid-row:3;"><span id="di-8"></span></div>
+    </div>
+
+    <!-- 1 坎 -->
+    <div class="cell" data-gong="1">
+    <div id="g1r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#2471a3;">1</span><span class="house-name" style="color:#2471a3;">坎</span></div><div class="bagua" style="--line-color:#2471a3;"><div class="bline-broken"><span></span><span></span></div><div class="bline-full"></div><div class="bline-broken"><span></span><span></span></div></div></div>
+    <div id="g1r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-1"></span></div>
+    <div id="g1r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-1"></div></div>
+    <div id="g1r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-1" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-1" class="travel-mark-label" style="display:none;"></span></div>
+    <div id="g1r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-1"></span></div>
+    <div id="g1r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-1"></span></div>
+    <div id="g1r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-1"></div></div>
+    <div id="g1r3c2" class="gc gc-gate" style="grid-column:2;grid-row:3;"><span id="gate-1"></span></div>
+    <div id="g1r3c3" class="gc gc-di" style="grid-column:3;grid-row:3;"><span id="di-1"></span></div>
+    </div>
+
+    <!-- 6 乾 -->
+    <div class="cell" data-gong="6">
+    <div id="g6r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#555555;">6</span><span class="house-name" style="color:#555555;">乾</span></div><div class="bagua" style="--line-color:#555555;"><div class="bline-full"></div><div class="bline-full"></div><div class="bline-full"></div></div></div>
+    <div id="g6r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-6"></span></div>
+    <div id="g6r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-6"></div></div>
+    <div id="g6r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-6" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-6" class="travel-mark-label" style="display:none;"></span></div>
+    <div id="g6r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-6"></span></div>
+    <div id="g6r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-6"></span></div>
+    <div id="g6r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-6"></div></div>
+    <div id="g6r3c2" class="gc gc-gate" style="grid-column:2;grid-row:3;"><span id="gate-6"></span></div>
+    <div id="g6r3c3" class="gc gc-di" style="grid-column:3;grid-row:3;"><span id="di-6"></span></div>
+    </div>
+
+</div><!-- end grid -->
+</div>
+
+<!-- 出行羅盤：吉方標記規則尚待討論；此層先固定呈現八宮五行色與即時朝向。 -->
+<div class="travel-overlay" id="travel-overlay" aria-hidden="true">
+  <div class="travel-map" id="travel-map"></div>
+  <div class="travel-board-layer" id="travel-board-layer"></div>
+  <div class="travel-compass" aria-label="八方位羅盤">
+    <svg class="travel-compass-disc" id="travel-compass-disc" viewBox="0 0 200 200">
+      <path class="travel-compass-sector" data-house="1" d="M100 100 L67.47 21.47 A85 85 0 0 1 132.53 21.47 Z" fill="#29B6F6" vector-effect="non-scaling-stroke"/>
+      <path class="travel-compass-sector" data-house="8" d="M100 100 L132.53 21.47 A85 85 0 0 1 178.53 67.47 Z" fill="#6F4E37" vector-effect="non-scaling-stroke"/>
+      <path class="travel-compass-sector" data-house="3" d="M100 100 L178.53 67.47 A85 85 0 0 1 178.53 132.53 Z" fill="#2E7D32" vector-effect="non-scaling-stroke"/>
+      <path class="travel-compass-sector" data-house="4" d="M100 100 L178.53 132.53 A85 85 0 0 1 132.53 178.53 Z" fill="#66BB6A" vector-effect="non-scaling-stroke"/>
+      <path class="travel-compass-sector" data-house="9" d="M100 100 L132.53 178.53 A85 85 0 0 1 67.47 178.53 Z" fill="#D32F2F" vector-effect="non-scaling-stroke"/>
+      <path class="travel-compass-sector" data-house="2" d="M100 100 L67.47 178.53 A85 85 0 0 1 21.47 132.53 Z" fill="#C8A878" vector-effect="non-scaling-stroke"/>
+      <path class="travel-compass-sector" data-house="7" d="M100 100 L21.47 132.53 A85 85 0 0 1 21.47 67.47 Z" fill="#CFD5DC" vector-effect="non-scaling-stroke"/>
+      <path class="travel-compass-sector" data-house="6" d="M100 100 L21.47 67.47 A85 85 0 0 1 67.47 21.47 Z" fill="#8E9AAF" vector-effect="non-scaling-stroke"/>
+      <circle class="travel-compass-ring" cx="100" cy="100" r="85" vector-effect="non-scaling-stroke"/>
+      <text class="travel-compass-gua" data-house="1" x="100" y="146" transform="rotate(180 100 100)" fill="#222">坎</text>
+      <text class="travel-compass-gua" data-house="8" x="100" y="146" transform="rotate(225 100 100)" fill="#222">艮</text>
+      <text class="travel-compass-gua" data-house="3" x="100" y="146" transform="rotate(270 100 100)" fill="#222">震</text>
+      <text class="travel-compass-gua" data-house="4" x="100" y="146" transform="rotate(315 100 100)" fill="#222">巽</text>
+      <text class="travel-compass-gua" data-house="9" x="100" y="146" transform="rotate(0 100 100)"   fill="#222">離</text>
+      <text class="travel-compass-gua" data-house="2" x="100" y="146" transform="rotate(45 100 100)"  fill="#222">坤</text>
+      <text class="travel-compass-gua" data-house="7" x="100" y="146" transform="rotate(90 100 100)"  fill="#222">兌</text>
+      <text class="travel-compass-gua" data-house="6" x="100" y="146" transform="rotate(135 100 100)" fill="#222">乾</text>
+      <text class="travel-compass-dot" data-house="1" x="100" y="160" transform="rotate(180 100 100)" fill="#222">・</text>
+      <text class="travel-compass-dot" data-house="8" x="100" y="160" transform="rotate(225 100 100)" fill="#222">・</text>
+      <text class="travel-compass-dot" data-house="3" x="100" y="160" transform="rotate(270 100 100)" fill="#222">・</text>
+      <text class="travel-compass-dot" data-house="4" x="100" y="160" transform="rotate(315 100 100)" fill="#222">・</text>
+      <text class="travel-compass-dot" data-house="9" x="100" y="160" transform="rotate(0 100 100)" fill="#222">・</text>
+      <text class="travel-compass-dot" data-house="2" x="100" y="160" transform="rotate(45 100 100)" fill="#222">・</text>
+      <text class="travel-compass-dot" data-house="7" x="100" y="160" transform="rotate(90 100 100)" fill="#222">・</text>
+      <text class="travel-compass-dot" data-house="6" x="100" y="160" transform="rotate(135 100 100)" fill="#222">・</text>
+      <text class="travel-compass-dir" data-house="1" x="100" y="176" transform="rotate(180 100 100)" fill="#222">北</text>
+      <text class="travel-compass-dir" data-house="8" x="100" y="176" transform="rotate(225 100 100)" fill="#222">東北</text>
+      <text class="travel-compass-dir" data-house="3" x="100" y="176" transform="rotate(270 100 100)" fill="#222">東</text>
+      <text class="travel-compass-dir" data-house="4" x="100" y="176" transform="rotate(315 100 100)" fill="#222">東南</text>
+      <text class="travel-compass-dir" data-house="9" x="100" y="176" transform="rotate(0 100 100)"   fill="#222">南</text>
+      <text class="travel-compass-dir" data-house="2" x="100" y="176" transform="rotate(45 100 100)"  fill="#222">西南</text>
+      <text class="travel-compass-dir" data-house="7" x="100" y="176" transform="rotate(90 100 100)"  fill="#222">西</text>
+      <text class="travel-compass-dir" data-house="6" x="100" y="176" transform="rotate(135 100 100)" fill="#222">西北</text>
+      <circle class="travel-compass-center" cx="100" cy="100" r="3" fill="rgba(255,255,255,.9)"/>
+    </svg>
+    <svg class="travel-compass-label-disc" id="travel-compass-label-disc" viewBox="0 0 200 200" aria-hidden="true">
+      <text class="travel-compass-gua" data-house="1" x="100" y="146" transform="rotate(180 100 100)" fill="#222">坎</text>
+      <text class="travel-compass-gua" data-house="8" x="100" y="146" transform="rotate(225 100 100)" fill="#222">艮</text>
+      <text class="travel-compass-gua" data-house="3" x="100" y="146" transform="rotate(270 100 100)" fill="#222">震</text>
+      <text class="travel-compass-gua" data-house="4" x="100" y="146" transform="rotate(315 100 100)" fill="#222">巽</text>
+      <text class="travel-compass-gua" data-house="9" x="100" y="146" transform="rotate(0 100 100)"   fill="#222">離</text>
+      <text class="travel-compass-gua" data-house="2" x="100" y="146" transform="rotate(45 100 100)"  fill="#222">坤</text>
+      <text class="travel-compass-gua" data-house="7" x="100" y="146" transform="rotate(90 100 100)"  fill="#222">兌</text>
+      <text class="travel-compass-gua" data-house="6" x="100" y="146" transform="rotate(135 100 100)" fill="#222">乾</text>
+      <text class="travel-compass-dot" data-house="1" x="100" y="160" transform="rotate(180 100 100)" fill="#222">・</text>
+      <text class="travel-compass-dot" data-house="8" x="100" y="160" transform="rotate(225 100 100)" fill="#222">・</text>
+      <text class="travel-compass-dot" data-house="3" x="100" y="160" transform="rotate(270 100 100)" fill="#222">・</text>
+      <text class="travel-compass-dot" data-house="4" x="100" y="160" transform="rotate(315 100 100)" fill="#222">・</text>
+      <text class="travel-compass-dot" data-house="9" x="100" y="160" transform="rotate(0 100 100)" fill="#222">・</text>
+      <text class="travel-compass-dot" data-house="2" x="100" y="160" transform="rotate(45 100 100)" fill="#222">・</text>
+      <text class="travel-compass-dot" data-house="7" x="100" y="160" transform="rotate(90 100 100)" fill="#222">・</text>
+      <text class="travel-compass-dot" data-house="6" x="100" y="160" transform="rotate(135 100 100)" fill="#222">・</text>
+      <text class="travel-compass-dir" data-house="1" x="100" y="176" transform="rotate(180 100 100)" fill="#222">北</text>
+      <text class="travel-compass-dir" data-house="8" x="100" y="176" transform="rotate(225 100 100)" fill="#222">東北</text>
+      <text class="travel-compass-dir" data-house="3" x="100" y="176" transform="rotate(270 100 100)" fill="#222">東</text>
+      <text class="travel-compass-dir" data-house="4" x="100" y="176" transform="rotate(315 100 100)" fill="#222">東南</text>
+      <text class="travel-compass-dir" data-house="9" x="100" y="176" transform="rotate(0 100 100)"   fill="#222">南</text>
+      <text class="travel-compass-dir" data-house="2" x="100" y="176" transform="rotate(45 100 100)"  fill="#222">西南</text>
+      <text class="travel-compass-dir" data-house="7" x="100" y="176" transform="rotate(90 100 100)"  fill="#222">西</text>
+      <text class="travel-compass-dir" data-house="6" x="100" y="176" transform="rotate(135 100 100)" fill="#222">西北</text>
+      <circle class="travel-compass-center" cx="100" cy="100" r="3" fill="rgba(255,255,255,.9)"/>
+    </svg>
+  </div>
+  <div class="travel-toolbar"><button type="button" onclick="closeTravelMode()">← 返回盤面</button></div>
+  <div class="travel-status" id="travel-status">載入地圖與定位中…</div>
+  <button type="button" class="travel-anchor-toggle" id="travel-anchor-toggle" onclick="toggleTravelAnchor()" aria-label="錨定圓心於地圖座標" title="錨定圓心於地圖座標">⚓</button>
+  <div class="travel-size-control"><label for="travel-size-range">羅盤大小 <span id="travel-size-value">88%</span></label><input id="travel-size-range" type="range" min="45" max="500" value="88" aria-label="調整羅盤大小"></div>
+  <div class="travel-orientation-card" id="travel-orientation-card"><span>啟用羅盤，讓方位圖跟著手機朝向轉動</span><button type="button" id="travel-orientation-btn">啟用</button></div>
+  <button type="button" class="travel-locate-btn" aria-label="回到目前位置" onclick="recenterTravelPosition()">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2 L19 21 L12 17 L5 21 Z"/></svg>
+  </button>
+  <!-- 圓心錨定：拖曳手把，必須跟 .travel-compass 分開放（它有 pointer-events:none），才能單獨接收拖曳事件 -->
+  <div id="travel-anchor-handle" class="travel-anchor-handle" title="拖曳移動羅盤圓心"></div>
+</div>
+
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ── 入墓判定 ──
+const ENTOMBED_TABLE = { '癸':2, '乙':6,'丙':6,'戊':6, '丁':8,'己':8,'庚':8, '辛':4,'壬':4 };
+
+// ── 擊刑判定（六儀天干） ──
+// 庚在艮(8)、壬在巽(4) 同時符合入墓與擊刑，兩者皆標記，天干顯示為擊刑紅色
+const PENALIZED_TABLE = { '戊':3, '己':2, '庚':8, '辛':9, '壬':4, '癸':4 };
+
+// 渲染天干字串（含寄干），有入墓或擊刑則標記
+// isDutyHouse: 此格是否為符頭天干所在宮位（甲入墓判定用，天盤地盤皆適用）
+function renderStemHTML(stem, house, dutyStem, isDutyHouse) {
+  if (!stem) return '';
+  return stem.split('').map(ch => {
+    const isPenalized = !!PENALIZED_TABLE[ch] && PENALIZED_TABLE[ch] === house;
+    let isEntombed = ENTOMBED_TABLE[ch] === house;
+    if (!isEntombed && isDutyHouse && house === 2 && ch === dutyStem) isEntombed = true;
+
+    if (isPenalized || isEntombed) {
+      const charClass = isPenalized ? 'stem-char penalized' : 'stem-char';
+      const fontSize = (isPenalized && isEntombed) ? '7px' : '9px';
+      const muTag   = isEntombed   ? `<span class="tag entombed${isPenalized ? ' has-penalized' : ''}" style="font-size:${fontSize};">墓</span>` : '';
+      const xingTag = isPenalized ? `<span class="tag penalized${isEntombed  ? ' has-entombed'  : ''}" style="font-size:${fontSize};">刑</span>` : '';
+      return `<span class="stem-mu"><span class="${charClass}">${ch}</span>${muTag}${xingTag}</span>`;
+    }
+    return `<span>${ch}</span>`;
+  }).join('');
+}
+
+// ── 十二長生（點擊天盤天干顯示） ──
+const CHANGSHENG_STAGE_ORDER = ['長生','沐浴','冠帶','臨官','帝旺','衰','病','死','墓','絕','胎','養'];
+const CHANGSHENG_STEM_BRANCHES = {
+  '甲': ['亥','子','丑','寅','卯','辰','巳','午','未','申','酉','戌'],
+  '乙': ['午','巳','辰','卯','寅','丑','子','亥','戌','酉','申','未'],
+  '丙': ['寅','卯','辰','巳','午','未','申','酉','戌','亥','子','丑'],
+  '丁': ['酉','申','未','午','巳','辰','卯','寅','丑','子','亥','戌'],
+  '戊': ['寅','卯','辰','巳','午','未','申','酉','戌','亥','子','丑'],
+  '己': ['酉','申','未','午','巳','辰','卯','寅','丑','子','亥','戌'],
+  '庚': ['巳','午','未','申','酉','戌','亥','子','丑','寅','卯','辰'],
+  '辛': ['子','亥','戌','酉','申','未','午','巳','辰','卯','寅','丑'],
+  '壬': ['申','酉','戌','亥','子','丑','寅','卯','辰','巳','午','未'],
+  '癸': ['卯','寅','丑','子','亥','戌','酉','申','未','午','巳','辰'],
+};
+
+function changshengStageColorClass(stage) {
+  if (stage === '沐浴') return 'stage-mu';
+  if (stage === '長生' || stage === '臨官') return 'stage-good';
+  return 'stage-neutral';
+}
+
+function renderChangsheng(stem) {
+  const branches = CHANGSHENG_STEM_BRANCHES[stem];
+  if (!branches) return;
+  const branchToStage = {};
+  branches.forEach((b, i) => { branchToStage[b] = CHANGSHENG_STAGE_ORDER[i]; });
+  document.querySelectorAll('.dz9-label[data-dz-label]').forEach(el => {
+    const branch = el.dataset.dzLabel;
+    const stage = branchToStage[branch] || '';
+    el.textContent = stage;
+    el.classList.remove('stage-mu', 'stage-good', 'stage-neutral');
+    if (stage) el.classList.add(changshengStageColorClass(stage));
+  });
+}
+
+function clearChangsheng() {
+  document.querySelectorAll('.dz9-label[data-dz-label]').forEach(el => {
+    el.textContent = '';
+    el.classList.remove('stage-mu', 'stage-good', 'stage-neutral');
+  });
+}
+
+let _activeChangshengHouse = null;
+let _activeChangshengIndex = -1;
+
+// 出行訣（標記模式／方框地圖／全螢幕羅盤）只適用陽盤；切到陰盤或命盤時，三層一起收掉，不留在背景
+function closeTravelEverything() {
+  if (typeof travelMarkingActive !== 'undefined' && travelMarkingActive) {
+    exitTravelMarkingModeUI();
+  }
+  const outer = document.getElementById('outer-board');
+  if (outer && outer.classList.contains('travel-map-mode')) {
+    exitTravelMapMode();
+  }
+  const overlay = document.getElementById('travel-overlay');
+  if (overlay && overlay.classList.contains('is-open')) {
+    closeTravelMode();
+  }
+}
+
+// 陰盤／陽盤（時盤／日盤）切換
+let PLATE_MODE = 'yin';    // 'yin' | 'yang'
+let PLATE_SUBMODE = 'time'; // 'time' | 'day'（僅陽盤適用）
+function applyPlateMode(mode) {
+  PLATE_MODE = mode;
+  document.getElementById('plate-yin').classList.toggle('active', mode === 'yin');
+  document.getElementById('plate-yang').classList.toggle('active', mode === 'yang');
+  document.getElementById('plate-yin-row').style.display = (mode === 'yin' && !MING_PAN_MODE) ? 'flex' : 'none';
+  document.getElementById('plate-subtoggle').style.display = (mode === 'yang' && !MING_PAN_MODE) ? 'flex' : 'none';
+  updateQuickNav();
+  // 出行訣開放給所有陽盤子模式；切到陰盤時自動整個收掉（標記/地圖/全螢幕都算，travelMarks 資料保留，只是畫面收起）
+  if (mode !== 'yang') {
+    closeTravelEverything();
+  }
+}
+function setPlateMode(mode) {
+  if (MING_PAN_MODE) {
+    // 命盤模式下點陰盤/陽盤＝視為主動離開命盤模式、改切到點的這個模式（比鎖住按鈕更直覺）
+    exitMingPanMode();
+    applyPlateMode(mode);
+    return;
+  }
+  if (mode === 'yang' && PLATE_MODE === 'yang') {
+    // 陽盤已選中時再點一次＝取消選取，回到陰盤（陰盤按鈕本身移到第二排，不然點不回去）
+    applyPlateMode('yin');
+    return;
+  }
+  applyPlateMode(mode);
+}
+function applyYangSubMode(sub) {
+  PLATE_SUBMODE = sub;
+  ['time','day','month','year'].forEach(s => {
+    document.getElementById('plate-yang-' + s).classList.toggle('active', sub === s);
+  });
+  updateQuickNav();
+}
+let _pendingYangSubMode = null; // 陽盤子模式切換確認期間，暫存使用者點的目標子模式
+
+// 出行訣是否有東西可能因為切換子模式而失去意義：已標記的吉凶，或標記/地圖/全螢幕任一層還開著
+function travelHasResettableState() {
+  const hasMark = TRAVEL_MARK_HOUSES.some(h => travelMarks[h] !== null);
+  if (hasMark) return true;
+  if (typeof travelMarkingActive !== 'undefined' && travelMarkingActive) return true;
+  const outer = document.getElementById('outer-board');
+  if (outer && outer.classList.contains('travel-map-mode')) return true;
+  const overlay = document.getElementById('travel-overlay');
+  if (overlay && overlay.classList.contains('is-open')) return true;
+  return false;
+}
+
+function showYangSubSwitchConfirm() {
+  document.getElementById('yang-submode-confirm').classList.add('is-open');
+}
+function hideYangSubSwitchConfirm() {
+  document.getElementById('yang-submode-confirm').classList.remove('is-open');
+  _pendingYangSubMode = null;
+}
+function confirmYangSubSwitch() {
+  const sub = _pendingYangSubMode;
+  hideYangSubSwitchConfirm();
+  if (!sub) return;
+  // 盤面重新起盤後，舊的吉凶標記已經對不上新的宮位意義，清空；地圖本身（位置/縮放/圖資）不動，維持原樣
+  TRAVEL_MARK_HOUSES.forEach(h => {
+    travelMarks[h] = null;
+    renderTravelMark(h);
+  });
+  updateTravelCompassSectorMarks();
+  applyYangSubMode(sub);
+}
+
+function setYangSubMode(sub) {
+  if (MING_PAN_MODE) { exitMingPanMode(); applyYangSubMode(sub); return; }
+  if (sub === PLATE_SUBMODE) return; // 沒有真的切換子模式，不用跳確認
+  if (travelHasResettableState()) {
+    _pendingYangSubMode = sub;
+    showYangSubSwitchConfirm();
+    return;
+  }
+  applyYangSubMode(sub);
+}
+
+// ── 命盤模式 ──
+// 固定套用「陽盤・時家(置閏)」計算該日期的盤（跟當下陰盤/陽盤選擇無關），
+// 在原本引干欄位（8個位置）改顯示紫微斗數十二宮（12個固定地支位置）。
+// 命宮＝時支所在固定位置，從命宮起逆時針依序放入十二宮名稱（見排盤規則.md外部討論，非課程逐字稿內容）。
+// 男命/女命目前僅記錄選擇，尚未套用大限順逆邏輯（待確認，見開發準則.md待確認事項）。
+let MING_PAN_MODE = false;
+let MING_PAN_GENDER = 'male'; // 'male' | 'female'
+let _prevPlateMode = 'yin', _prevPlateSubmode = 'time'; // 命盤關閉時還原用
+
+// 關閉命盤模式的共用部分：還原命盤相關 UI（標籤、指南針、引干欄位），但不動 PLATE_MODE本身，
+// 交由呼叫端決定接下來要套用哪個模式（回到進入命盤前的模式，或使用者剛點的新模式）
+function exitMingPanMode() {
+  if (!MING_PAN_MODE) return;
+  MING_PAN_MODE = false;
+  document.getElementById('plate-mingpan').classList.remove('active');
+  document.getElementById('mingpan-gender-toggle').style.display = 'none';
+  ['yin-1','yin-2','yin-3','yin-4','yin-6','yin-7','yin-8','yin-9'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = '';
+  });
+  document.querySelectorAll('.mingpan-label').forEach(el => { el.style.display = 'none'; });
+  const compassRing = document.getElementById('compassRing');
+  if (compassRing) compassRing.style.display = '';
+}
+
+function toggleMingPan() {
+  if (MING_PAN_MODE) {
+    // 點「命盤」關閉：還原成進入命盤前原本選的模式
+    exitMingPanMode();
+    applyPlateMode(_prevPlateMode);
+    if (_prevPlateMode === 'yang') applyYangSubMode(_prevPlateSubmode);
+    return;
+  }
+
+  // 點「命盤」開啟
+  MING_PAN_MODE = true;
+  // 出行訣不適用命盤；標記/地圖/全螢幕若還開著，一起自動收掉（travelMarks 資料保留，只是畫面收起）
+  closeTravelEverything();
+  _prevPlateMode = PLATE_MODE;
+  _prevPlateSubmode = PLATE_SUBMODE;
+  document.getElementById('plate-mingpan').classList.add('active');
+  document.getElementById('mingpan-gender-toggle').style.display = 'flex';
+  applyPlateMode('yang');
+  applyYangSubMode('time');
+  // 命盤模式固定套用「陽盤・時家(置閏)」，不需要讓人再切時/日/月/年，直接把整排按鈕藏起來
+  document.getElementById('plate-subtoggle').style.display = 'none';
+
+  // 切換8個引干欄位 vs 12個命盤宮位標籤的顯示
+  ['yin-1','yin-2','yin-3','yin-4','yin-6','yin-7','yin-8','yin-9'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  document.querySelectorAll('.mingpan-label').forEach(el => {
+    el.style.display = '';
+  });
+
+  // 命盤模式：中宮不顯示指南針（老師的排盤工具中宮不放干支類資訊），改放大限歲數；
+  // 十二長生／地支資訊（g5r1c1~g5r3c3，指南針以外的其餘子格）維持顯示，不受影響
+  const compassRing = document.getElementById('compassRing');
+  if (compassRing) compassRing.style.display = 'none';
+}
+
+function setMingPanGender(g) {
+  MING_PAN_GENDER = g;
+  document.getElementById('mingpan-male').classList.toggle('active', g === 'male');
+  document.getElementById('mingpan-female').classList.toggle('active', g === 'female');
+}
+
+// 十二宮固定順序（從命宮起）；十二地支固定位置對照（見排盤規則.md外部討論）
+const MINGPAN_PALACE_NAMES = ['命宮','兄弟','夫妻','子女','財帛','疾厄','遷移','交友','事業','田宅','福德','父母'];
+const MINGPAN_BRANCH_POSITION = {
+  '巳':'top-l', '午':'top-c', '未':'top-r',
+  '申':'right-t', '酉':'right-c', '戌':'right-b',
+  '亥':'bottom-r', '子':'bottom-c', '丑':'bottom-l',
+  '寅':'left-b', '卯':'left-c', '辰':'left-t'
+};
+function renderMingPan(mingGongBranch) {
+  const startIdx = EARTH_BRANCH_LIST.indexOf(mingGongBranch);
+  if (startIdx < 0) return;
+  for (let i = 0; i < 12; i++) {
+    const branch = EARTH_BRANCH_LIST[(startIdx - i + 12) % 12]; // 從命宮起逆時針（地支遞減方向）
+    const posKey = MINGPAN_BRANCH_POSITION[branch];
+    const el = document.getElementById('mp-' + posKey);
+    if (!el) continue;
+    const name = MINGPAN_PALACE_NAMES[i];
+    // 左右兩側比照陰盤引干（.yigan-left/.yigan-right）做法：逐字拆成 span，靠 flex-direction:column 直式堆疊，
+    // 不使用 writing-mode（先前造成左右不對稱的問題來源）；上下兩側維持橫式整串文字。
+    if (posKey.startsWith('left') || posKey.startsWith('right')) {
+      el.innerHTML = name.split('').map(ch => `<span>${ch}</span>`).join('');
+    } else {
+      el.textContent = name;
+    }
+  }
+}
+
+// 命盤模式：排「大限」歲數區間，寫入各宮 gc-left2 空格（.gc-daxian），中宮則寫入指南針原本的位置
+// 依據：老師app（tzchimen）教材圖22/23——起運宮＝局數本身（1~9，含中宮）；
+//   第一大限＝1歲(虛歲)～局數，之後每宮固定+10年；
+//   方向：男命陽局順、陰局逆；女命陰局順、陽局逆；
+//   順逆走「系統一」九宮數字順序（1→2→3→4→5→6→7→8→9含中宮，循環），非實際順逆時針。
+// 中宮（5）：指南針在命盤模式下隱藏（見 toggleMingPan），該格改顯示中宮的大限歲數。
+function renderDaXian(solsticeType, chartNum, gender) {
+  const isYangJu = solsticeType === '陽';
+  const forward = (gender === 'male') ? isYangJu : !isYangJu; // 男陽局／女陰局＝順，其餘＝逆
+
+  // 清除舊資料
+  [1,2,3,4,5,6,7,8,9].forEach(h => {
+    const el = document.getElementById('daxian-' + h);
+    if (el) el.textContent = '';
+  });
+
+  let ageStart = 1;
+  let ageEnd = chartNum;
+  for (let i = 0; i < 9; i++) {
+    const house = forward
+      ? (((chartNum - 1 + i) % 9) + 1)
+      : (((chartNum - 1 - i) % 9 + 9) % 9 + 1);
+    const el = document.getElementById('daxian-' + house);
+    if (el) el.innerHTML = `<span class="dx-start">${String(ageStart).padStart(2,'0')}</span><span class="dx-mid">＼</span><span class="dx-end"><span class="dx-num">${String(ageEnd).padStart(2,'0')}</span><span class="dx-suffix">歲</span></span>`;
+    ageStart = ageEnd;
+    ageEnd = ageStart + 10;
+  }
+}
+
+// 取得該宮位可觸發十二長生的候選清單：天盤天干（寄干則有兩個，左→右）→ 值符（若本宮為值符宮，代表甲）
+function getHouseChangshengCandidates(cellEl) {
+  const candidates = [];
+  const tianContainer = cellEl.querySelector('.gc-tian');
+  if (tianContainer) {
+    const tianEl = tianContainer.querySelector('[id^="tian-"]') || tianContainer;
+    const wrapperSpans = [...tianEl.querySelectorAll(':scope > span')];
+    wrapperSpans.forEach(w => {
+      const span = w.classList.contains('stem-mu') ? (w.querySelector('.stem-char') || w) : w;
+      if (!span || span.classList.contains('tag')) return;
+      const stem = (span.textContent || '').trim();
+      if (stem && CHANGSHENG_STEM_BRANCHES[stem]) {
+        candidates.push({ span, stem });
+      }
+    });
+  }
+  const shenContainer = cellEl.querySelector('.gc-shen');
+  if (shenContainer) {
+    const shenSpan = shenContainer.querySelector('span');
+    if (shenSpan && (shenSpan.textContent || '').trim() === '值符') {
+      candidates.push({ span: shenSpan, stem: '甲' });
+    }
+  }
+  return candidates;
+}
+
+
+function captureChart() {
+  alert('請直接使用手機截圖儲存。');
+}
+
+// ── 指南針（中5宮正中央格）──
+(function() {
+  const compassCell = document.getElementById('compassCell');
+  const compassRing = document.getElementById('compassRing');
+  if (!compassCell || !compassRing) return;
+
+  let compassActive = false;
+
+  function applyHeading(heading) {
+    // 排盤圖是離9(南)在上方，不是一般地圖的北在上方，所以這裡要對準「南」而非「北」
+    const southHeading = (heading + 180) % 360;
+    compassRing.style.transform = `rotate(${-southHeading}deg)`;
+  }
+
+  function handleOrientation(e) {
+    if (travelCompassFrozen) return; // 出行訣地圖模式期間指針凍結，改由 setTravelCompassOrientation 固定控制，不套用即時朝向
+    let heading = null;
+    if (typeof e.webkitCompassHeading === 'number') {
+      // iOS：webkitCompassHeading 已經是真實方位角，數值越準確
+      heading = e.webkitCompassHeading;
+    } else if (e.alpha !== null && e.alpha !== undefined) {
+      // Android：alpha 為裝置朝向與磁北的夾角，近似換算
+      heading = 360 - e.alpha;
+    }
+    if (heading !== null) applyHeading(heading);
+  }
+
+  function startCompass() {
+    if (compassActive) return;
+    compassActive = true;
+    window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+    window.addEventListener('deviceorientation', handleOrientation, true);
+  }
+
+  compassCell.addEventListener('click', function() {
+    // 羅盤已啟用 → 這次點擊不是要開權限，而是詢問是否進入出行訣吉凶標記模式
+    if (compassActive) {
+      // 已經在方框內嵌地圖模式中：點中宮＝旋轉（2026.08 併入指針，取代原本獨立的⟳按鈕）；
+      // pointer-events 只在 #paipan-result 底下的原始位置開放（見 CSS），搬進全螢幕快照層後這裡不會被觸發，不需另外判斷
+      const outerEl = document.getElementById('outer-board');
+      if (outerEl && outerEl.classList.contains('travel-map-mode')) {
+        toggleTravelMapRotate();
+        return;
+      }
+      if (typeof travelMarkingActive !== 'undefined' && travelMarkingActive) return; // 標記中不重複詢問
+      // 出行訣開放給所有陽盤（時/日/月/年家皆可）；僅陰盤、命盤不適用；兩者都永遠不會進出行訣，直接不反應，不跳提示
+      if (typeof PLATE_MODE === 'undefined' || PLATE_MODE !== 'yang' || (typeof MING_PAN_MODE !== 'undefined' && MING_PAN_MODE)) {
+        return;
+      }
+      showTravelAskPanel();
+      return;
+    }
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission().then(function(state) {
+        if (state === 'granted') {
+          startCompass();
+        } else {
+          alert('未取得方向感測器權限，指南針無法使用。');
+        }
+      }).catch(function(err) {
+        alert('無法啟用指南針：' + err.message);
+      });
+    } else if (typeof DeviceOrientationEvent !== 'undefined') {
+      // Android 等不需要額外授權的瀏覽器
+      startCompass();
+    } else {
+      alert('此裝置或瀏覽器不支援方向感測器。');
+    }
+  });
+})();
+
+// ══════════════════════════════════
+// 出行訣 階段一：吉凶標記模式（不含地圖，純 UI；地圖載入是階段二的工作）
+// 觸發鏈：羅盤已啟用 → 中5宮再次點擊 → 詢問是否載入出行訣圖資 → 是 → 進入標記模式
+// ══════════════════════════════════
+const TRAVEL_MARK_HOUSES = [1,2,3,4,6,7,8,9];
+let travelMarks = {}; // { house: '吉' | '凶' | null }，null＝未標記
+TRAVEL_MARK_HOUSES.forEach(h => { travelMarks[h] = null; });
+let travelMarkingActive = false;
+
+// 階段三＋：吉凶標記除了「一開始的標記流程」(travelMarkingActive) 之外，
+// 進入方框地圖模式後只要按「盤」鈕顯示盤面，也可以隨時點擊宮位新增/修改標記——
+// 兩個入口共用同一組編輯狀態判斷，不需要另外開一個標記流程
+function travelMarkEditable() {
+  if (travelMarkingActive) return true;
+  const outer = document.getElementById('outer-board');
+  return !!(outer && outer.classList.contains('travel-map-mode') && outer.classList.contains('board-visible'));
+}
+
+function showTravelAskPanel() {
+  document.getElementById('travel-ask-panel').classList.add('is-open');
+}
+function hideTravelAskPanel() {
+  document.getElementById('travel-ask-panel').classList.remove('is-open');
+}
+function confirmTravelAsk(yes) {
+  hideTravelAskPanel();
+  if (yes) enterTravelMarkingMode();
+}
+
+function renderTravelMark(house) {
+  const el = document.getElementById('travel-mark-' + house);
+  if (!el) return;
+  const v = travelMarks[house];
+  el.classList.remove('mark-lucky', 'mark-unlucky', 'mark-placeholder');
+  if (v) {
+    el.textContent = v; // 選取後維持原樣：吉／凶單一文字，各自獨立
+    el.classList.add(v === '吉' ? 'mark-lucky' : 'mark-unlucky');
+  } else if (travelMarkEditable()) {
+    // 未標記時的淡灰提示：上下兩行，吉靠左、凶靠右，沒有斜線（見 CSS .mark-placeholder）
+    el.innerHTML = '<span class="travel-mark-line-lucky">吉</span><span class="travel-mark-line-unlucky">凶</span>';
+    el.classList.add('mark-placeholder');
+  } else {
+    el.textContent = '';
+  }
+}
+
+// 三態循環：未標記 → 吉 → 凶 → 未標記，手感同天盤天干點擊十二長生
+function cycleTravelMark(house) {
+  const cur = travelMarks[house];
+  travelMarks[house] = cur === null ? '吉' : (cur === '吉' ? '凶' : null);
+  renderTravelMark(house);
+  updateTravelCompassSectorMarks(); // 階段三：同步標記狀態到全螢幕扇形羅盤邊框（即使當下還沒開全螢幕也先同步好）
+  // 標記時保留橘框高亮，手感比照十二長生：單一高亮、點哪個宮位就換到哪個宮位（不顯示天干長生文字，那部分仍停用）
+  clearHighlight();
+  const cell = document.querySelector('.cell[data-gong="' + house + '"]');
+  if (cell) applyHouseHighlight(cell);
+}
+
+// 階段三：把 travelMarks 目前狀態套到全螢幕扇形羅盤（travel-compass-disc）的宮位文字上
+// 金字＝吉、黑字＝凶，不改動扇形本身的顏色與分隔線（整片扇形描邊視覺上太笨重，見「還是高亮文字」的討論）
+function updateTravelCompassSectorMarks() {
+  TRAVEL_MARK_HOUSES.forEach(h => {
+    const v = travelMarks[h];
+    document.querySelectorAll('.travel-compass-gua[data-house="' + h + '"], .travel-compass-dir[data-house="' + h + '"], .travel-compass-dot[data-house="' + h + '"]').forEach(label => {
+      label.classList.remove('mark-lucky', 'mark-unlucky');
+      if (v === '吉') label.classList.add('mark-lucky');
+      else if (v === '凶') label.classList.add('mark-unlucky');
+    });
+  });
+}
+
+function enterTravelMarkingMode() {
+  if (travelMarkingActive) return;
+  // c1r2 這格命盤模式下顯示大限，跟出行標記共用同一格、會互相蓋住，兩者互斥；
+  // 命盤開著時先關閉命盤，還原成進入命盤前的模式，避免畫面衝突
+  if (typeof MING_PAN_MODE !== 'undefined' && MING_PAN_MODE) {
+    exitMingPanMode();
+    applyPlateMode(_prevPlateMode);
+    if (_prevPlateMode === 'yang') applyYangSubMode(_prevPlateSubmode);
+  }
+  // 進入出行訣標記：宮位點擊改切換吉凶用途，先清掉十二長生原本可能留著的高亮／內容，避免混在一起
+  document.querySelectorAll('.gc-tian .stem-active, .gc-shen .stem-active').forEach(s => s.classList.remove('stem-active'));
+  clearHighlight();
+  clearChangsheng();
+  _activeChangshengHouse = null;
+  _activeChangshengIndex = -1;
+  const yongshenEl = document.getElementById('hb-yongshen');
+  if (yongshenEl) yongshenEl.textContent = '—';
+  travelMarkingActive = true;
+  TRAVEL_MARK_HOUSES.forEach(h => {
+    const markEl = document.getElementById('travel-mark-' + h);
+    if (markEl) markEl.style.display = '';
+    const cell = document.querySelector('.cell[data-gong="' + h + '"]');
+    if (cell) cell.classList.add('travel-marking-active');
+    renderTravelMark(h);
+  });
+  document.getElementById('travel-marking-banner').classList.add('is-open');
+}
+
+function exitTravelMarkingModeUI() {
+  travelMarkingActive = false;
+  TRAVEL_MARK_HOUSES.forEach(h => {
+    const markEl = document.getElementById('travel-mark-' + h);
+    if (markEl) markEl.style.display = 'none';
+    const cell = document.querySelector('.cell[data-gong="' + h + '"]');
+    if (cell) cell.classList.remove('travel-marking-active');
+  });
+  document.getElementById('travel-marking-banner').classList.remove('is-open');
+  clearHighlight(); // 退出標記模式，順手清掉標記期間留下的高亮框，回到一般排盤畫面時不留殘影
+}
+
+// 取消：退出標記模式的畫面，但保留目前已選的 travelMarks 資料，下次再開仍在
+function cancelTravelMarking() {
+  if (!travelMarkingActive) return;
+  exitTravelMarkingModeUI();
+}
+
+// 確認：階段一收尾在這裡，travelMarks 已備妥；階段二接手，直接轉入方框地圖模式
+function confirmTravelMarking() {
+  if (!travelMarkingActive) return;
+  exitTravelMarkingModeUI();
+  console.log('出行訣吉凶標記已確認：', travelMarks);
+  enterTravelMapMode();
+}
+
+// 點整個宮位（不限左中格小範圍）都可以切換吉凶；十二長生的宮位點擊高亮在標記期間會自行停用（見 changshengClickDisabled），兩者不衝突
+TRAVEL_MARK_HOUSES.forEach(h => {
+  const cell = document.querySelector('.cell[data-gong="' + h + '"]');
+  if (cell) {
+    cell.addEventListener('click', function() {
+      if (!travelMarkEditable()) return;
+      cycleTravelMark(h);
+    });
+  }
+});
+
+// ══════════════════════════════════
+// 出行訣 階段二 2a：方框內嵌地圖（confirmTravelMarking 收尾後觸發，固定在原九宮框範圍內）
+// ══════════════════════════════════
+let inlineTravelMap = null;
+let inlineTravelPositionMarker = null;
+
+function initializeInlineTravelMap() {
+  if (inlineTravelMap || typeof L === 'undefined') return;
+  // 未取得定位前維持中性世界視角；不可預設任何國家或地區
+  // dragging 預設關閉：南上北下（預設方向）時容器整體旋轉180度，拖曳座標判讀會反向；
+  // 轉正（北上南下，見 toggleTravelMapRotate）後不再反向，屆時才開放拖曳
+  inlineTravelMap = L.map('travel-inline-map', { zoomControl: false, attributionControl: false, dragging: false }).setView([20, 0], 2);
+  L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+    maxZoom: 20,
+    subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+    attribution: 'Map data © Google'
+  }).addTo(inlineTravelMap);
+}
+
+function locateInlineTravelPosition(forceZoom) {
+  if (forceZoom === undefined) forceZoom = true;
+  if (!inlineTravelMap || !navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(function(position) {
+    const latLng = [position.coords.latitude, position.coords.longitude];
+    if (inlineTravelPositionMarker) inlineTravelMap.removeLayer(inlineTravelPositionMarker);
+    inlineTravelPositionMarker = L.circleMarker(latLng, { radius: 4, color: '#2471a3', fillColor: '#2471a3', fillOpacity: 1, weight: 1.5 }).addTo(inlineTravelMap);
+    if (forceZoom) {
+      inlineTravelMap.setView(latLng, 16);
+    } else {
+      inlineTravelMap.panTo(latLng); // 拉回按鈕專用：只平移，不更動使用者手動調整過的縮放比例
+    }
+  }, function() {
+    // 定位失敗：維持中性世界視角，不阻斷畫面
+  }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+}
+
+function recenterInlineTravelPosition() {
+  locateInlineTravelPosition(false);
+}
+
+// 指針凍結旗標：出行訣地圖模式期間指針改跟九宮方位固定，不跟即時裝置朝向連動；
+// 供下方指南針 IIFE 的 handleOrientation 讀取判斷是否要略過這次即時朝向更新。
+let travelCompassFrozen = false;
+
+// 指針固定朝向：rotated=false（預設南上北下）→ rotate(0deg)（S在上，即指針原始未旋轉狀態，本就對準南）；
+// rotated=true（旋轉鈕轉正後、北上南下）→ rotate(180deg)（翻面，N在上）
+function setTravelCompassOrientation(rotated) {
+  const ring = document.getElementById('compassRing');
+  if (ring) ring.style.transform = rotated ? 'rotate(180deg)' : 'rotate(0deg)';
+}
+
+function enterTravelMapMode() {
+  const outer = document.getElementById('outer-board');
+  const wrap = document.getElementById('travel-inline-map-wrap');
+  if (!outer || !wrap) return;
+  outer.classList.add('travel-map-mode');
+  wrap.style.display = '';
+  initializeInlineTravelMap();
+  // 階段三＋：地圖模式期間，吉凶標記格保持可顯示狀態（實際看不看得到由「盤」鈕的 board-visible 控制），
+  // 這樣按「盤」鈕顯示盤面時，之前標記的吉凶會一起現形，也可以繼續點擊修改
+  TRAVEL_MARK_HOUSES.forEach(h => {
+    const markEl = document.getElementById('travel-mark-' + h);
+    if (markEl) markEl.style.display = '';
+    renderTravelMark(h);
+  });
+  // 指針凍結：地圖模式期間指針不跟即時裝置朝向連動，改固定跟著九宮方位（見 setTravelCompassOrientation）
+  travelCompassFrozen = true;
+  setTravelCompassOrientation(travelMapRotated);
+  // wrap 剛從 display:none 切換出來，Leaflet 量測容器尺寸需等下一輪事件循環才準確
+  setTimeout(function() {
+    if (inlineTravelMap) inlineTravelMap.invalidateSize();
+    locateInlineTravelPosition(true);
+  }, 0);
+}
+
+function exitTravelMapMode() {
+  const outer = document.getElementById('outer-board');
+  const wrap = document.getElementById('travel-inline-map-wrap');
+  if (!outer || !wrap) return;
+  if (travelMapRotated) toggleTravelMapRotate(); // 復原宮位順序與地圖朝向，下次進入維持預設南上北下
+  outer.classList.remove('travel-map-mode');
+  outer.classList.remove('board-visible');
+  document.getElementById('travel-inline-board-toggle').classList.remove('active');
+  wrap.style.display = 'none';
+  // 離開地圖模式，回到一般排盤畫面：吉凶標記格收起（資料 travelMarks 仍保留，下次進地圖模式會沿用）
+  TRAVEL_MARK_HOUSES.forEach(h => {
+    const markEl = document.getElementById('travel-mark-' + h);
+    if (markEl) markEl.style.display = 'none';
+  });
+  travelCompassFrozen = false; // 解凍，指針恢復跟隨即時裝置朝向（若羅盤本來就是啟用狀態，下一個朝向事件會自動接手）
+}
+
+function toggleTravelBoardOverlay() {
+  const outer = document.getElementById('outer-board');
+  const btn = document.getElementById('travel-inline-board-toggle');
+  if (!outer) return;
+  const isVisible = outer.classList.toggle('board-visible');
+  if (btn) btn.classList.toggle('active', isVisible);
+  // 「盤」鈕同時決定吉凶標記是否可編輯（見 travelMarkEditable），切換時重繪一次讓未標記宮位的「吉/凶」提示字跟著顯示/隱藏
+  TRAVEL_MARK_HOUSES.forEach(h => renderTravelMark(h));
+}
+
+// ── 2b：旋轉鈕。地圖轉正（北上南下）＋宮位內容對調同步發生 ──
+// 對調用「搬動實際 DOM 節點」而非純 CSS，理由：.grid 是隱式九宮格（DOM順序即畫面位置），
+// 且外框線（.cell:nth-child(1/3/7/9) 的 border）也是靠 DOM 順序判斷，若只用 CSS order 視覺上會位移
+// 但 nth-child 判斷的框線不會跟著動，造成外框線跟內容對不齊。搬動 DOM 節點兩者會同步正確。
+let travelMapRotated = false;
+
+function swapDomNodes(nodeA, nodeB) {
+  if (!nodeA || !nodeB || nodeA === nodeB) return;
+  const parentA = nodeA.parentNode, parentB = nodeB.parentNode;
+  if (!parentA || !parentB) return;
+  const markerA = document.createTextNode('');
+  const markerB = document.createTextNode('');
+  parentA.insertBefore(markerA, nodeA);
+  parentB.insertBefore(markerB, nodeB);
+  parentA.insertBefore(nodeB, markerA);
+  parentB.insertBefore(nodeA, markerB);
+  markerA.remove();
+  markerB.remove();
+}
+
+function swapTravelHousePair(a, b) {
+  const grid = document.querySelector('#outer-board .grid');
+  if (!grid) return;
+  const cellA = grid.querySelector('.cell[data-gong="' + a + '"]');
+  const cellB = grid.querySelector('.cell[data-gong="' + b + '"]');
+  swapDomNodes(cellA, cellB);
+}
+
+function toggleTravelMapRotate() {
+  const outer = document.getElementById('outer-board');
+  if (!outer) return;
+  travelMapRotated = !travelMapRotated;
+  outer.classList.toggle('travel-map-rotated', travelMapRotated);
+  // 轉正（北上南下）後拖曳方向判讀不再反向，開放拖曳；轉回預設南上北下時關閉，理由同容器旋轉的原始限制
+  if (inlineTravelMap && inlineTravelMap.dragging) {
+    if (travelMapRotated) inlineTravelMap.dragging.enable();
+    else inlineTravelMap.dragging.disable();
+  }
+  // 180度旋轉＝對角互換；同一組配對再點一次即復原（toggle 天然可逆，不需另存原始順序）
+  swapTravelHousePair(4, 6);
+  swapTravelHousePair(9, 1);
+  swapTravelHousePair(2, 8);
+  swapTravelHousePair(7, 3);
+  // 指針跟著同步翻面（凍結狀態下才有意義；地圖模式外呼叫此函式的路徑目前不存在，此行為安全）
+  setTravelCompassOrientation(travelMapRotated);
+}
+
+document.getElementById('travel-inline-exit').addEventListener('click', exitTravelMapMode);
+document.getElementById('travel-inline-locate').addEventListener('click', function() { recenterInlineTravelPosition(); });
+document.getElementById('travel-inline-board-toggle').addEventListener('click', toggleTravelBoardOverlay);
+document.getElementById('travel-inline-fullscreen').addEventListener('click', openTravelMode); // 階段三：方框地圖 → 全螢幕扇形羅盤
+
+// ── 門迫判定 ──
+// ══════════════════════════════════
+// 出行羅盤：地圖與裝置朝向。吉方選取介面確認後，只需以 house number 更新對應扇形即可。
+// ══════════════════════════════════
+let travelMap = null;
+let travelPositionMarker = null;
+let travelCompassEnabled = false;
+let travelBoardPlaceholder = null;
+let travelInlineWrapPrevDisplay = null; // 階段三：記住展開全螢幕前，方框內嵌地圖(travel-inline-map-wrap)原本的 display 值，供關閉全螢幕時還原
+
+// 圓心錨定（手動模式，預設關閉）：開啟後羅盤圓心固定在地圖上的某個經緯度，不再跟著畫面置中；
+// 可拖曳 #travel-anchor-handle 重新設定錨點；即時位置藍點（travelPositionMarker）不受影響，兩者並存
+let travelCompassAnchored = false;
+let travelCompassAnchorLatLng = null; // L.LatLng
+let travelAnchorDragging = false;
+let travelAnchorDragStart = { x: 0, y: 0, sx: 0, sy: 0 };
+
+function setTravelStatus(message) {
+  const statusEl = document.getElementById('travel-status');
+  if (statusEl) statusEl.textContent = message;
+}
+
+function initializeTravelMap() {
+  if (travelMap || typeof L === 'undefined') return;
+  // 未取得定位前維持中性世界視角；不可預設任何國家或地區。
+  travelMap = L.map('travel-map', { zoomControl: false, attributionControl: true }).setView([20, 0], 2);
+  L.control.zoom({ position: 'topright' }).addTo(travelMap);
+  L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+    maxZoom: 20,
+    subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+    attribution: 'Map data © Google'
+  }).addTo(travelMap);
+  // 錨定模式下，地圖平移/縮放要重算錨點對應的螢幕座標
+  travelMap.on('move zoom', function() {
+    if (travelCompassAnchored) applyTravelCompassPos();
+  });
+}
+
+function locateTravelPosition(forceZoom) {
+  if (forceZoom === undefined) forceZoom = true; // 預設行為（初次開啟出行模式時）維持原本鎖定16縮放
+  if (!navigator.geolocation) {
+    setTravelStatus('此裝置不支援定位');
+    return;
+  }
+  setTravelStatus('定位中…');
+  navigator.geolocation.getCurrentPosition(function(position) {
+    const latLng = [position.coords.latitude, position.coords.longitude];
+    if (!travelMap) initializeTravelMap();
+    if (travelPositionMarker) travelMap.removeLayer(travelPositionMarker);
+    travelPositionMarker = L.circleMarker(latLng, { radius: 7, color: '#2471a3', fillColor: '#2471a3', fillOpacity: 1, weight: 2 }).addTo(travelMap);
+    if (forceZoom) {
+      travelMap.setView(latLng, 16);
+    } else {
+      travelMap.panTo(latLng); // 只平移，不更動使用者當下手動調整過的縮放比例
+    }
+    setTravelStatus('目前位置已定位');
+  }, function() {
+    setTravelStatus('定位失敗，請確認定位權限');
+  }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+}
+
+// 「回到目前位置」按鈕專用：只平移地圖，不強制改變縮放比例
+function recenterTravelPosition() {
+  locateTravelPosition(false);
+}
+
+function renderTravelCompass(heading) {
+  const compassEl = document.getElementById('travel-compass-disc');
+  if (compassEl) compassEl.style.transform = `rotate(${(360 - heading) % 360}deg)`;
+  const labelEl = document.getElementById('travel-compass-label-disc');
+  if (labelEl) labelEl.style.transform = `rotate(${(360 - heading) % 360}deg)`;
+}
+
+// ── 圓心錨定（手動，預設關閉）──
+// 關閉：羅盤浮在畫面正中央（left/top:50%，跟 .travel-compass 原本的置中邏輯一致）
+// 開啟：羅盤圓心固定在 travelCompassAnchorLatLng 這個地理座標，隨地圖平移/縮放重算螢幕位置
+function applyTravelCompassPos() {
+  const compassEl = document.querySelector('.travel-compass');
+  const handle = document.getElementById('travel-anchor-handle');
+  if (!compassEl) return;
+  if (!travelCompassAnchored || !travelCompassAnchorLatLng || !travelMap) {
+    compassEl.style.left = '50%';
+    compassEl.style.top = '50%';
+    if (handle) handle.style.display = 'none';
+    return;
+  }
+  const pt = travelMap.latLngToContainerPoint(travelCompassAnchorLatLng);
+  compassEl.style.left = pt.x + 'px';
+  compassEl.style.top = pt.y + 'px';
+  if (handle) {
+    handle.style.left = pt.x + 'px';
+    handle.style.top = pt.y + 'px';
+    handle.style.display = 'block';
+  }
+}
+
+function toggleTravelAnchor() {
+  travelCompassAnchored = !travelCompassAnchored;
+  const btn = document.getElementById('travel-anchor-toggle');
+  if (btn) btn.classList.toggle('active', travelCompassAnchored);
+  if (travelCompassAnchored) {
+    // 開啟當下：抓目前畫面中心對應的地圖座標，當作初始錨點（比照參考做法）
+    if (travelMap) travelCompassAnchorLatLng = travelMap.getCenter();
+    setTravelStatus('圓心已錨定，可拖曳 ✥ 調整位置');
+  } else {
+    travelCompassAnchorLatLng = null;
+    setTravelStatus('圓心已取消錨定，回到畫面正中央');
+  }
+  applyTravelCompassPos();
+}
+
+// 拖曳手把重新設定錨點（滑鼠＋觸控），手把獨立於 .travel-compass 之外（後者 pointer-events:none）
+function updateTravelAnchorScreenPos(sx, sy) {
+  const compassEl = document.querySelector('.travel-compass');
+  const handle = document.getElementById('travel-anchor-handle');
+  if (compassEl) { compassEl.style.left = sx + 'px'; compassEl.style.top = sy + 'px'; }
+  if (handle) { handle.style.left = sx + 'px'; handle.style.top = sy + 'px'; }
+  if (travelMap) travelCompassAnchorLatLng = travelMap.containerPointToLatLng(L.point(sx, sy));
+}
+
+function initTravelAnchorDrag() {
+  const handle = document.getElementById('travel-anchor-handle');
+  const compassEl = document.querySelector('.travel-compass');
+  if (!handle) return;
+
+  function dragStart(sx0, sy0, clientX, clientY) {
+    travelAnchorDragging = true;
+    if (compassEl) compassEl.classList.add('anchor-dragging');
+    travelAnchorDragStart.x = clientX;
+    travelAnchorDragStart.y = clientY;
+    travelAnchorDragStart.sx = sx0;
+    travelAnchorDragStart.sy = sy0;
+  }
+  function dragEnd() {
+    travelAnchorDragging = false;
+    if (compassEl) compassEl.classList.remove('anchor-dragging');
+  }
+
+  handle.addEventListener('mousedown', function(e) {
+    if (!travelCompassAnchored || !travelCompassAnchorLatLng || !travelMap) return;
+    const pt = travelMap.latLngToContainerPoint(travelCompassAnchorLatLng);
+    dragStart(pt.x, pt.y, e.clientX, e.clientY);
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!travelAnchorDragging) return;
+    const sx = travelAnchorDragStart.sx + (e.clientX - travelAnchorDragStart.x);
+    const sy = travelAnchorDragStart.sy + (e.clientY - travelAnchorDragStart.y);
+    updateTravelAnchorScreenPos(sx, sy);
+  });
+  document.addEventListener('mouseup', function() { if (travelAnchorDragging) dragEnd(); });
+
+  handle.addEventListener('touchstart', function(e) {
+    if (!travelCompassAnchored || !travelCompassAnchorLatLng || !travelMap) return;
+    const t = e.touches[0];
+    const pt = travelMap.latLngToContainerPoint(travelCompassAnchorLatLng);
+    dragStart(pt.x, pt.y, t.clientX, t.clientY);
+    e.preventDefault();
+  }, { passive: false });
+  document.addEventListener('touchmove', function(e) {
+    if (!travelAnchorDragging) return;
+    const t = e.touches[0];
+    const sx = travelAnchorDragStart.sx + (t.clientX - travelAnchorDragStart.x);
+    const sy = travelAnchorDragStart.sy + (t.clientY - travelAnchorDragStart.y);
+    updateTravelAnchorScreenPos(sx, sy);
+  }, { passive: false });
+  document.addEventListener('touchend', function() { if (travelAnchorDragging) dragEnd(); });
+}
+initTravelAnchorDrag();
+
+function handleTravelOrientation(event) {
+  let heading = null;
+  if (typeof event.webkitCompassHeading === 'number') {
+    heading = event.webkitCompassHeading;
+  } else if (event.absolute && typeof event.alpha === 'number') {
+    heading = 360 - event.alpha;
+  }
+  if (heading === null) return;
+  renderTravelCompass(heading);
+}
+
+function startTravelCompass() {
+  if (travelCompassEnabled) return;
+  travelCompassEnabled = true;
+  window.addEventListener('deviceorientationabsolute', handleTravelOrientation, true);
+  window.addEventListener('deviceorientation', handleTravelOrientation, true);
+  document.getElementById('travel-orientation-card').classList.remove('is-visible');
+  setTravelStatus('羅盤已跟隨手機朝向');
+}
+
+function requestTravelCompass() {
+  if (typeof DeviceOrientationEvent === 'undefined') {
+    setTravelStatus('此裝置不支援方向感測');
+    return;
+  }
+  if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+    document.getElementById('travel-orientation-card').classList.add('is-visible');
+  } else {
+    startTravelCompass();
+  }
+}
+
+function openTravelMode() {
+  const overlay = document.getElementById('travel-overlay');
+  const boardLayer = document.getElementById('travel-board-layer');
+  const board = document.querySelector('#paipan-result .outer');
+  if (!overlay || !boardLayer || !board || overlay.classList.contains('is-open')) return;
+  // 階段三：若是從方框地圖模式展開，先暫時隱藏方框內嵌地圖（travel-inline-map-wrap），
+  // 避免跟全螢幕背景地圖疊在一起顯示；記住原本的 display 值，關閉全螢幕時還原
+  const inlineWrap = document.getElementById('travel-inline-map-wrap');
+  travelInlineWrapPrevDisplay = inlineWrap ? inlineWrap.style.display : null;
+  if (inlineWrap) inlineWrap.style.display = 'none';
+  updateTravelCompassSectorMarks(); // 同步吉凶標記到扇形羅盤邊框
+  travelBoardPlaceholder = document.createComment('travel-board-placeholder');
+  board.parentNode.insertBefore(travelBoardPlaceholder, board);
+  boardLayer.appendChild(board);
+  overlay.setAttribute('aria-hidden', 'false');
+  overlay.classList.add('board-visible');
+  initializeTravelMap();
+  requestAnimationFrame(function() {
+    overlay.classList.add('is-open');
+    if (travelMap) travelMap.invalidateSize();
+    setTimeout(function() { overlay.classList.remove('board-visible'); }, 60);
+  });
+  setTimeout(function() {
+    if (travelMap) travelMap.invalidateSize();
+    locateTravelPosition();
+  }, 300);
+  requestTravelCompass();
+}
+
+function closeTravelMode() {
+  const overlay = document.getElementById('travel-overlay');
+  const board = document.querySelector('#travel-board-layer .outer');
+  if (!overlay || !overlay.classList.contains('is-open')) return;
+  overlay.classList.remove('is-open', 'board-visible');
+  document.getElementById('travel-orientation-card').classList.remove('is-visible');
+  // 關閉全螢幕：圓心錨定重設回預設關閉狀態，下次重新進入維持「浮在畫面正中央」的預設行為
+  travelCompassAnchored = false;
+  travelCompassAnchorLatLng = null;
+  const anchorBtn = document.getElementById('travel-anchor-toggle');
+  if (anchorBtn) anchorBtn.classList.remove('active');
+  applyTravelCompassPos();
+  setTimeout(function() {
+    if (board && travelBoardPlaceholder) {
+      travelBoardPlaceholder.parentNode.insertBefore(board, travelBoardPlaceholder);
+      travelBoardPlaceholder.remove();
+      travelBoardPlaceholder = null;
+    }
+    // 階段三：還原方框內嵌地圖原本的顯示狀態（若當初是從地圖模式展開全螢幕進來的）
+    const inlineWrap = document.getElementById('travel-inline-map-wrap');
+    if (inlineWrap && travelInlineWrapPrevDisplay !== null) {
+      inlineWrap.style.display = travelInlineWrapPrevDisplay;
+      if (inlineWrap.style.display === '' && inlineTravelMap) {
+        inlineTravelMap.invalidateSize(); // 剛從 display:none 恢復，Leaflet 容器尺寸需要重新量測
+      }
+    }
+    travelInlineWrapPrevDisplay = null;
+    overlay.setAttribute('aria-hidden', 'true');
+  }, 300);
+}
+
+document.getElementById('travel-orientation-btn').addEventListener('click', function() {
+  DeviceOrientationEvent.requestPermission().then(function(result) {
+    if (result === 'granted') startTravelCompass();
+    else setTravelStatus('未取得羅盤權限');
+  }).catch(function() { setTravelStatus('羅盤權限請求失敗'); });
+});
+
+document.getElementById('travel-size-range').addEventListener('input', function(event) {
+  const size = event.target.value;
+  document.documentElement.style.setProperty('--travel-compass-size', size + 'vmax');
+  document.getElementById('travel-size-value').textContent = size + '%';
+});
+
+const GATE_CONSTRAINT_TABLE = {
+  '休門': [9],
+  '生門': [1],
+  '傷門': [2, 8],
+  '杜門': [2, 8],
+  '景門': [6, 7],
+  '死門': [1],
+  '驚門': [3, 4],
+  '開門': [3, 4],
+};
+// ── 制判定（宮剋門，跟門迫相反的方向：宮的五行反過來剋制門）──
+// 適用範圍：陽盤全系列（時家置閏／日／月／年盤），一般陰盤排除（老師陰盤實測確認無此標記）。
+// 不算四害，純視覺標示，顏色比照「墓」字淡化處理。
+const GATE_SUPPRESS_TABLE = {
+  '休門': [2, 8],
+  '生門': [3, 4],
+  '傷門': [6, 7],
+  '杜門': [6, 7],
+  '景門': [1],
+  '死門': [3, 4],
+  '驚門': [9],
+  '開門': [9],
+};
+
+function renderGateHTML(gate, house) {
+  if (!gate) return '';
+  const constraintHouses = GATE_CONSTRAINT_TABLE[gate] || [];
+  if (constraintHouses.includes(house)) {
+    return `<span style="position:relative;display:inline-block;color:#c0392b;">${gate}<span class="tag gate-constraint">迫</span></span>`;
+  }
+  if (PLATE_MODE === 'yang') {
+    const suppressHouses = GATE_SUPPRESS_TABLE[gate] || [];
+    if (suppressHouses.includes(house)) {
+      return `<span style="position:relative;display:inline-block;">${gate}<span class="tag gate-suppress">制</span></span>`;
+    }
+  }
+  return gate;
+}
+
+function resetChart() {
+  clearHighlight();
+  if (MING_PAN_MODE) exitMingPanMode();
+  applyPlateMode('yin');
+  ['year','month','day','hour','minute'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.value = '';
+      el.classList.remove('input-error');
+    }
+  });
+  const msgEl = document.getElementById('input-error-msg');
+  if (msgEl) { msgEl.textContent = ''; msgEl.style.display = 'none'; }
+  ['sy','sm','sd','st','ly','lm','ld','lt',
+   'gz-y-gan','gz-y-zhi','gz-m-gan','gz-m-zhi','gz-d-gan','gz-d-zhi','gz-h-gan','gz-h-zhi',
+   'hb-qiju','hb-fuyin','hb-marker','hb-xun','hb-dutyStem','hb-voidBranches','hb-travel-horse','hb-zhifu','hb-zhishi','hb-yongshen'
+  ].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = '—';
+  });
+  [1,2,3,4,6,7,8,9].forEach(g => {
+    ['sh-','star-','gate-','tian-','di-','void-','horse-','yin-'].forEach(pre => {
+      const el = document.getElementById(pre + g);
+      if (el) el.innerHTML = '';
+    });
+  });
+}
+
+function getInputDate() {
+  const y = parseInt(document.getElementById('year').value) || 0;
+  const m = parseInt(document.getElementById('month').value) || 1;
+  const d = parseInt(document.getElementById('day').value) || 1;
+  const h = parseInt(document.getElementById('hour').value) || 0;
+  const mn = parseInt(document.getElementById('minute').value) || 0;
+  return new Date(y, m - 1, d, h, mn);
+}
+
+function setInputDate(dt) {
+  document.getElementById('year').value = dt.getFullYear();
+  document.getElementById('month').value = pad(dt.getMonth() + 1);
+  document.getElementById('day').value = pad(dt.getDate());
+  document.getElementById('hour').value = pad(dt.getHours());
+  document.getElementById('minute').value = pad(dt.getMinutes());
+}
+
+function shiftDate(days) {
+  const dt = getInputDate();
+  dt.setDate(dt.getDate() + days);
+  setInputDate(dt);
+  castChart();
+}
+
+function shiftHour(hours) {
+  const dt = getInputDate();
+  dt.setHours(dt.getHours() + hours);
+  setInputDate(dt);
+  castChart();
+}
+
+function shiftMonth(months) {
+  const dt = getInputDate();
+  dt.setMonth(dt.getMonth() + months);
+  setInputDate(dt);
+  castChart();
+}
+
+function shiftYear(years) {
+  const dt = getInputDate();
+  dt.setFullYear(dt.getFullYear() + years);
+  setInputDate(dt);
+  castChart();
+}
+
+// 快捷鍵按鈕組：依當前盤別／子模式切換對應的時間跳轉單位
+// 陰盤／陽盤時盤：前日／次日／上時／下時（沿用原本行為）
+// 陽盤日盤：上日／次日（日盤只看日干支，時分不影響結果，不需要上時/下時）
+// 陽盤月盤：上月／次月（比照tzchimen月家的「上月/次月」設計）
+// 陽盤年盤：去年／次年（比照tzchimen年家的「去年/次年」設計）
+function updateQuickNav() {
+  const row = document.getElementById('btn-quick-row');
+  if (!row) return;
+  let html;
+  if (PLATE_MODE === 'yang' && PLATE_SUBMODE === 'year') {
+    html = `
+      <button class="btn-quick" onclick="shiftYear(-1)">去年</button>
+      <div class="btn-quick-spacer"></div>
+      <div class="btn-quick-spacer"></div>
+      <button class="btn-quick" onclick="shiftYear(+1)">次年</button>
+    `;
+  } else if (PLATE_MODE === 'yang' && PLATE_SUBMODE === 'month') {
+    html = `
+      <button class="btn-quick" onclick="shiftMonth(-1)">上月</button>
+      <div class="btn-quick-spacer"></div>
+      <div class="btn-quick-spacer"></div>
+      <button class="btn-quick" onclick="shiftMonth(+1)">次月</button>
+    `;
+  } else if (PLATE_MODE === 'yang' && PLATE_SUBMODE === 'day') {
+    html = `
+      <button class="btn-quick" onclick="shiftDate(-1)">上日</button>
+      <div class="btn-quick-spacer"></div>
+      <div class="btn-quick-spacer"></div>
+      <button class="btn-quick" onclick="shiftDate(+1)">次日</button>
+    `;
+  } else {
+    html = `
+      <button class="btn-quick" onclick="shiftDate(-1)">前日</button>
+      <button class="btn-quick" onclick="shiftHour(-2)">上時</button>
+      <button class="btn-quick" onclick="shiftHour(+2)">下時</button>
+      <button class="btn-quick" onclick="shiftDate(+1)">次日</button>
+    `;
+  }
+  row.innerHTML = html;
+}
+
+function setNow() {
+  setInputDate(new Date());
+}
+
+// 頁面載入時自動填入當前時間
+window.addEventListener('DOMContentLoaded', () => { setNow(); updateQuickNav(); });
+
+const pad = n => String(n).padStart(2, '0');
+
+// ── 宮位點擊高亮 ──
+// grid排列: 4(1) 9(2) 2(3) / 3(4) 5(5) 7(6) / 8(7) 1(8) 6(9)
+const HOUSE_NEIGHBORS = {
+  1:{right:2,bottom:4}, 2:{right:3,bottom:5}, 3:{bottom:6},
+  4:{right:5,bottom:7}, 5:{right:6,bottom:8}, 6:{bottom:9},
+  7:{right:8},          8:{right:9},           9:{}
+};
+// 預建反查表：left / top
+const HOUSE_LEFT  = {};
+const HOUSE_TOP   = {};
+Object.keys(HOUSE_NEIGHBORS).forEach(k => {
+  const n = HOUSE_NEIGHBORS[k];
+  if (n.right)  HOUSE_LEFT[n.right]  = +k;
+  if (n.bottom) HOUSE_TOP[n.bottom]  = +k;
+});
+const HIGHLIGHT_COLOR = '#e67e22';
+
+// 宮位 → 中宮對應小格 id
+const HOUSE_TO_DZ_CELL = {
+  4: 'g5r1c1', 9: 'g5r1c2', 2: 'g5r1c3',
+  3: 'g5r2c1',              7: 'g5r2c3',
+  8: 'g5r3c1', 1: 'g5r3c2', 6: 'g5r3c3',
+};
+
+let _houseCells = null;
+function getHouseCells() {
+  if (!_houseCells) _houseCells = [...document.querySelectorAll('.grid .cell')];
+  return _houseCells;
+}
+
+function clearHighlight() {
+  getHouseCells().forEach(c => {
+    c.classList.remove('highlighted');
+    c.style.borderTopColor = c.style.borderBottomColor =
+    c.style.borderLeftColor = c.style.borderRightColor = '';
+  });
+  // 清除中宮小格邊框
+  document.querySelectorAll('.gc-center').forEach(gc => {
+    gc.style.borderTopColor = gc.style.borderLeftColor =
+    gc.style.borderRightColor = gc.style.borderBottomColor = '';
+  });
+}
+
+function applyHouseHighlight(cellEl) {
+  const cells = getHouseCells();
+  const nth = cells.indexOf(cellEl) + 1;
+  if (nth === 0) return;
+  cellEl.classList.add('highlighted');
+  cellEl.style.borderTopColor = cellEl.style.borderBottomColor =
+  cellEl.style.borderLeftColor = cellEl.style.borderRightColor = HIGHLIGHT_COLOR;
+
+  // 右側相鄰格左邊改橘
+  const r = HOUSE_NEIGHBORS[nth]?.right;
+  if (r) cells[r-1].style.borderLeftColor = HIGHLIGHT_COLOR;
+  // 下側相鄰格上邊改橘
+  const b = HOUSE_NEIGHBORS[nth]?.bottom;
+  if (b) cells[b-1].style.borderTopColor = HIGHLIGHT_COLOR;
+  // 左側相鄰格右邊改橘
+  const lk = HOUSE_LEFT[nth];
+  if (lk) cells[lk-1].style.borderRightColor = HIGHLIGHT_COLOR;
+  // 上側相鄰格下邊改橘
+  const tk = HOUSE_TOP[nth];
+  if (tk) cells[tk-1].style.borderBottomColor = HIGHLIGHT_COLOR;
+
+  // 中宮對應地支格：改四邊顏色
+  const gong = parseInt(cellEl.dataset.gong);
+  const dzId = HOUSE_TO_DZ_CELL[gong];
+  if (dzId) {
+    const gc = document.getElementById(dzId);
+    if (!gc) return;
+    const row = parseInt(dzId[3]);
+    const col = parseInt(dzId[5]);
+
+    // right / bottom：直接改自身
+    gc.style.borderRightColor  = HIGHLIGHT_COLOR;
+    gc.style.borderBottomColor = HIGHLIGHT_COLOR;
+
+    // top：row1 改自身 top（外框邊）；row2/3 改上方格 bottom
+    if (row === 1) {
+      gc.style.borderTopColor = HIGHLIGHT_COLOR;
+    } else {
+      document.getElementById(`g5r${row-1}c${col}`).style.borderBottomColor = HIGHLIGHT_COLOR;
+    }
+
+    // left：col1 改自身 left（外框邊）；col2/3 改左方格 right
+    if (col === 1) {
+      gc.style.borderLeftColor = HIGHLIGHT_COLOR;
+    } else {
+      document.getElementById(`g5r${row}c${col-1}`).style.borderRightColor = HIGHLIGHT_COLOR;
+    }
+  }
+}
+
+// 出行訣標記中（travelMarkingActive 或地圖模式）：宮位點擊改成切換吉凶用途，
+// 十二長生的宮位點擊高亮功能在此期間先禁用，避免兩種點擊意圖互相干擾
+function changshengClickDisabled() {
+  if (typeof travelMarkingActive !== 'undefined' && travelMarkingActive) return true;
+  const outer = document.getElementById('outer-board');
+  return !!(outer && outer.classList.contains('travel-map-mode'));
+}
+
+document.querySelectorAll('.cell[data-gong]').forEach(cell => {
+  cell.addEventListener('click', function() {
+    if (changshengClickDisabled()) return;
+    const candidates = getHouseChangshengCandidates(this);
+    if (candidates.length === 0) return;
+
+    const sameHouse = (_activeChangshengHouse === this);
+    let nextIndex;
+    if (!sameHouse) {
+      nextIndex = 0;
+    } else if (_activeChangshengIndex === candidates.length - 1) {
+      nextIndex = -1;
+    } else {
+      nextIndex = _activeChangshengIndex + 1;
+    }
+
+    document.querySelectorAll('.gc-tian .stem-active, .gc-shen .stem-active').forEach(s => s.classList.remove('stem-active'));
+    clearHighlight();
+    clearChangsheng();
+
+    const yongshenEl = document.getElementById('hb-yongshen');
+
+    if (nextIndex === -1) {
+      _activeChangshengHouse = null;
+      _activeChangshengIndex = -1;
+      if (yongshenEl) yongshenEl.textContent = '—';
+      return;
+    }
+
+    const chosen = candidates[nextIndex];
+    chosen.span.classList.add('stem-active');
+    renderChangsheng(chosen.stem);
+    applyHouseHighlight(this);
+    _activeChangshengHouse = this;
+    _activeChangshengIndex = nextIndex;
+    if (yongshenEl) yongshenEl.textContent = chosen.stem;
+  });
+});
+
+// 自動跳格
+const INPUT_ORDER = ['year','month','day','hour','minute'];
+const INPUT_MAXLEN = { year:4, month:2, day:2, hour:2, minute:2 };
+
+INPUT_ORDER.forEach((id, idx) => {
+  const el = document.getElementById(id);
+  el.addEventListener('input', function() {
+    // 只保留數字
+    this.value = this.value.replace(/\D/g, '');
+    if (this.value.length >= INPUT_MAXLEN[id]) {
+      const next = INPUT_ORDER[idx + 1];
+      if (next) document.getElementById(next).focus();
+    }
+  });
+  el.addEventListener('keydown', function(e) {
+    if (e.key === 'Backspace' && this.value === '') {
+      const prev = INPUT_ORDER[idx - 1];
+      if (prev) {
+        const prevEl = document.getElementById(prev);
+        prevEl.focus();
+        // 游標移到末位
+        const len = prevEl.value.length;
+        prevEl.setSelectionRange(len, len);
+      }
+    }
+  });
+});
+
+// ==================== 陽盤時家置閏法引擎 ====================
+// 移植自「奇門曆引擎」工具，錨點 1899-12-22 甲子日 冬至 陽一局 正授（已多來源交叉驗證）
+// 僅負責算「局數＋陰陽遁」，其餘排盤步驟（值符值使、八神八星八門、引干、四害）與陰盤共用，不受影響
+
+const YANG_CYCLE_TRAD = ['冬至','小寒','大寒','立春','雨水','驚蟄','春分','清明','穀雨','立夏','小滿','芒種','夏至','小暑','大暑','立秋','處暑','白露','秋分','寒露','霜降','立冬','小雪','大雪'];
+const YANG_CYCLE_SIMP = ['冬至','小寒','大寒','立春','雨水','惊蛰','春分','清明','谷雨','立夏','小满','芒种','夏至','小暑','大暑','立秋','处暑','白露','秋分','寒露','霜降','立冬','小雪','大雪'];
+const YANG_JU_TABLE = {
+  "冬至":{"dun":"陽遁","shang":1,"zhong":7,"xia":4},"小寒":{"dun":"陽遁","shang":2,"zhong":8,"xia":5},
+  "大寒":{"dun":"陽遁","shang":3,"zhong":9,"xia":6},"立春":{"dun":"陽遁","shang":8,"zhong":5,"xia":2},
+  "雨水":{"dun":"陽遁","shang":9,"zhong":6,"xia":3},"驚蟄":{"dun":"陽遁","shang":1,"zhong":7,"xia":4},
+  "春分":{"dun":"陽遁","shang":3,"zhong":9,"xia":6},"清明":{"dun":"陽遁","shang":4,"zhong":1,"xia":7},
+  "穀雨":{"dun":"陽遁","shang":5,"zhong":2,"xia":8},"立夏":{"dun":"陽遁","shang":4,"zhong":1,"xia":7},
+  "小滿":{"dun":"陽遁","shang":5,"zhong":2,"xia":8},"芒種":{"dun":"陽遁","shang":6,"zhong":3,"xia":9},
+  "夏至":{"dun":"陰遁","shang":9,"zhong":3,"xia":6},"小暑":{"dun":"陰遁","shang":8,"zhong":2,"xia":5},
+  "大暑":{"dun":"陰遁","shang":7,"zhong":1,"xia":4},"立秋":{"dun":"陰遁","shang":2,"zhong":5,"xia":8},
+  "處暑":{"dun":"陰遁","shang":1,"zhong":4,"xia":7},"白露":{"dun":"陰遁","shang":9,"zhong":3,"xia":6},
+  "秋分":{"dun":"陰遁","shang":7,"zhong":1,"xia":4},"寒露":{"dun":"陰遁","shang":6,"zhong":9,"xia":3},
+  "霜降":{"dun":"陰遁","shang":5,"zhong":8,"xia":2},"立冬":{"dun":"陰遁","shang":6,"zhong":9,"xia":3},
+  "小雪":{"dun":"陰遁","shang":5,"zhong":8,"xia":1},"大雪":{"dun":"陰遁","shang":4,"zhong":7,"xia":1}
+};
+const YANG_ANCHOR = new Date(Date.UTC(1899,11,22)); // 1899-12-22 甲子日 冬至 陽一局 正授
+const YANG_ANCHOR_INDEX = 0; // 冬至
+
+let _yangJieQiTableCache = {};
+function _yangParseSolarToDate(solarObj){
+  const s = solarObj.toYmdHms();
+  const m = s.match(/(\d+)-(\d+)-(\d+)\s+(\d+):(\d+):(\d+)/);
+  return new Date(Date.UTC(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +m[6]));
+}
+function _yangLoadJieQiTableForYear(y){
+  if (_yangJieQiTableCache[y]) return _yangJieQiTableCache[y];
+  const lunar = Lunar.fromYmd(y, 6, 15);
+  const raw = lunar.getJieQiTable();
+  const table = {};
+  for (const name in raw) {
+    if (raw.hasOwnProperty(name)) table[name] = _yangParseSolarToDate(raw[name]);
+  }
+  _yangJieQiTableCache[y] = table;
+  return table;
+}
+function _yangGetRealJieqiDate(cycleIndex, nearDate){
+  const simpName = YANG_CYCLE_SIMP[cycleIndex];
+  const y = nearDate.getUTCFullYear();
+  let best = null, bestDist = Infinity;
+  [y-1, y, y+1].forEach(yr => {
+    const table = _yangLoadJieQiTableForYear(yr);
+    if (table[simpName]) {
+      const dist = Math.abs(table[simpName].getTime() - nearDate.getTime());
+      if (dist < bestDist) { bestDist = dist; best = table[simpName]; }
+    }
+  });
+  return best;
+}
+function _yangDateOnly(d){ return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())); }
+function _yangDayDiff(a,b){ return Math.round((_yangDateOnly(a).getTime()-_yangDateOnly(b).getTime())/86400000); }
+function _yangAddDays(d,n){ return new Date(d.getTime()+n*86400000); }
+
+let _yangSimCache = [];
+let _yangSimCacheEndsAt = null;
+let _yangSimCursorIndex = YANG_ANCHOR_INDEX;
+let _yangSimCursorDate = YANG_ANCHOR;
+
+function _yangStepOnce(){
+  const jieqi = YANG_CYCLE_TRAD[_yangSimCursorIndex];
+  const jt = YANG_JU_TABLE[jieqi];
+  const real = _yangGetRealJieqiDate(_yangSimCursorIndex, _yangSimCursorDate);
+  const diffDays = real ? _yangDayDiff(real, _yangSimCursorDate) : null;
+  const isTrigger = (jieqi === '大雪' || jieqi === '芒種') && diffDays !== null && diffDays >= 9;
+  const row = {
+    date: _yangSimCursorDate, jieqi, dun: jt.dun,
+    shang: jt.shang, zhong: jt.zhong, xia: jt.xia,
+    actual: real, diffDays, zhiRun: isTrigger
+  };
+  _yangSimCache.push(row);
+  _yangSimCursorDate = _yangAddDays(_yangSimCursorDate, 15);
+  if (!isTrigger) _yangSimCursorIndex = (_yangSimCursorIndex + 1) % 24;
+  _yangSimCacheEndsAt = _yangSimCursorDate;
+  return row;
+}
+function _yangEnsureSimulatedUntil(targetDate){
+  let guard = 0;
+  while ((_yangSimCacheEndsAt === null || _yangSimCacheEndsAt <= targetDate) && guard < 20000) {
+    _yangStepOnce();
+    guard++;
+  }
+}
+function _yangFindRowForDate(targetDate){
+  _yangEnsureSimulatedUntil(targetDate);
+  let idx = -1;
+  for (let i = 0; i < _yangSimCache.length; i++) {
+    if (_yangSimCache[i].date.getTime() <= targetDate.getTime()) idx = i; else break;
+  }
+  return idx >= 0 ? _yangSimCache[idx] : null;
+}
+
+// 陽盤局數（僅看日期，跟時分無關；子時跨日等細節不適用，因局數以15天為粒度）
+// 回傳 { solsticeType:'陽'|'陰', chartNum:1-9, row } 供 castChart() 使用
+function getYangChartNumber(y, m, d) {
+  const target = new Date(Date.UTC(y, m - 1, d));
+  if (target.getTime() < YANG_ANCHOR.getTime()) return null; // 早於已驗證錨點範圍
+  const row = _yangFindRowForDate(target);
+  if (!row) return null;
+  const offset = _yangDayDiff(target, row.date);
+  let yuanKey;
+  if (offset <= 4) yuanKey = 'shang';
+  else if (offset <= 9) yuanKey = 'zhong';
+  else yuanKey = 'xia';
+  return {
+    solsticeType: row.dun === '陽遁' ? '陽' : '陰',
+    chartNum: row[yuanKey],
+    jieqi: row.jieqi,
+    zhiRun: row.zhiRun,
+    row
+  };
+}
+
+// ⚠️ 已淘汰：月盤原本是工具開發過程中類推套用9.2節氣表＋強制陰遁的假設（舊函式getYangChartNumberForcedYin，
+// 非老師教學內容——老師只教過陽盤第三步以後的流程骨架共用，未具體教授局數怎麼算），
+// 2026.08經8筆實測資料證實這套自訂假設方向錯誤，已改用下方getMonthWuXingJu（跟年盤同一套三元甲子邏輯，5年一區塊）。
+
+// 年盤專用：三元甲子局數表（2026.08 實測驗證，取代工具開發過程中原本套用9.2節氣表的自訂假設）
+// 依據：6筆比對資料（china95.net、tzchimen.com）橫跨1957-2026年，證實年家局數
+// 不是按9.2表逐日/逐節氣變動，而是套用玄空飛星「三元甲子」的60年區塊，每180年循環：
+//   上元：1864起 → 陰1局；中元：1924起 → 陰4局；下元：1984起 → 陰7局
+// 換元邊界已實測確認為1984年立春（1984/2/4癸亥年中元陰4局 → 1984/2/5甲子年下元陰7局），
+// 與排盤規則.md「年支須用節氣換年」原則一致，故效力年份（effectiveYear）採用八字年柱
+// 干支反推，不用西元曆年或農曆正月初一。陰陽遁固定為陰遁（此點原假設方向正確，未變動）。
+const SAN_YUAN_ANCHOR_YEAR = 1864; // 上元起始年（甲子，以立春為界）
+const SAN_YUAN_JU_BY_YUAN = [1, 4, 7]; // [上元, 中元, 下元] 對應局數
+function getEffectiveYearFromGanZhi(y, yearGZ) {
+  // 由西元年反推「立春校正後」的年份：year本身的干支已由 eightChar（含立春校正）算出，
+  // 這裡只是找出與該干支相符、且落在 y 附近（y-1／y／y+1）的西元年整數，供三元表查詢用
+  const stemIdx = HEAVEN_STEM_LIST.indexOf(yearGZ[0]);
+  const branchIdx = EARTH_BRANCH_LIST.indexOf(yearGZ[1]);
+  for (const cand of [y, y - 1, y + 1]) {
+    const s = ((cand - 4) % 10 + 10) % 10;
+    const b = ((cand - 4) % 12 + 12) % 12;
+    if (s === stemIdx && b === branchIdx) return cand;
+  }
+  return y; // 理論上不會走到這裡，僅防呆
+}
+// 已驗證範圍：1800年起（2026.08用china95.net五組資料往回驗證確認，涵蓋1804年立春換元邊界）。
+// 1800年以前公式仍會照常計算（純mod 180運算，跟時盤那種鏈式模擬不同，沒有方向性限制），
+// 但缺乏比對資料，故標示為「未驗證外推」而非直接擋下。
+const SAN_YUAN_VERIFIED_FROM_YEAR = 1800;
+function getYearSanYuanJu(y, m, d, yearGZ) {
+  const effectiveYear = getEffectiveYearFromGanZhi(y, yearGZ);
+  const offset = ((effectiveYear - SAN_YUAN_ANCHOR_YEAR) % 180 + 180) % 180;
+  const yuanIndex = Math.floor(offset / 60); // 0=上元, 1=中元, 2=下元
+  return {
+    solsticeType: '陰',
+    chartNum: SAN_YUAN_JU_BY_YUAN[yuanIndex],
+    yuanName: ['上元', '中元', '下元'][yuanIndex],
+    effectiveYear,
+    isVerified: effectiveYear >= SAN_YUAN_VERIFIED_FROM_YEAR
+  };
+}
+// 月盤專用：跟年盤同一套「三元甲子」邏輯，只是週期縮小為5年一區塊、15年一循環（2026.08 實測驗證）
+// 依據：8筆比對資料（china95.net）橫跨1975-2029年，涵蓋上中下三元，逐項核對局數與china95顯示的
+// 「上/中/下元XX年」區塊起始年標籤，全數一致。這推翻的是工具開發過程中自訂的類推假設（「月盤跟時盤
+// 共用置閏邏輯」），不是老師教學內容——老師只教過陽盤第三步以後的流程骨架共用，未具體教過局數公式。
+// 月盤實際運作更接近年盤的縮小版：60個月＝5年（跟年干支60甲子循環一樣是精確離散系統，不套用會浮動
+// 的節氣連續量），故不需要時盤那套超神接氣、大雪/芒種置閏機制。effectiveYear沿用同一套立春校正反推
+// （見getEffectiveYearFromGanZhi），局數對照表也跟年盤共用同一張[1,4,7]，已驗證範圍同年盤沿用
+// SAN_YUAN_VERIFIED_FROM_YEAR（1800年起）。
+// 此函式取代原本的getYangChartNumberForcedYin(套9.2節氣表)作為月盤的正式邏輯。
+function getMonthWuXingJu(y, m, d, yearGZ) {
+  const effectiveYear = getEffectiveYearFromGanZhi(y, yearGZ);
+  const offset = ((effectiveYear - SAN_YUAN_ANCHOR_YEAR) % 15 + 15) % 15;
+  const blockIndex = Math.floor(offset / 5); // 0=上元, 1=中元, 2=下元（5年一區塊）
+  return {
+    solsticeType: '陰',
+    chartNum: SAN_YUAN_JU_BY_YUAN[blockIndex],
+    yuanName: ['上元', '中元', '下元'][blockIndex],
+    effectiveYear,
+    isVerified: effectiveYear >= SAN_YUAN_VERIFIED_FROM_YEAR
+  };
+}
+// ⚠️ 陰陽遁判定精度更新（2026.08，獨立資料佐證）：Eric用china95.net「日家奇門」交叉驗證，
+// 同一天內（2026/12/22庚午日）冬至交節時刻（04:51）前後一小時開盤，4:24仍顯示「阴庚午日」、
+// 5:24已顯示「阳庚午日」——證實奇門陰陽遁切換不是只精確到日。
+// 原本借用的getYangChartNumber()雖然內部有抓到精確節氣時刻，但_yangDateOnly()會把時分秒砍掉、
+// 只留年月日比較，是日級精度，跟這次實測發現的精度不符，故另立本函式，不動原本的日級版本
+// （getYangChartNumber沿用給時盤自己的鏈式模擬用，不受影響）。
+// 2026.08再更新：本函式已改為陰盤的正式判定（取代getSolsticeType()，見該函式上方棄用說明），
+// 用china95.net「陰盤奇門」實測資料（4:24阴遁八局／5:24阳遁九局）二度驗證，證實不只日家奇門、
+// 標準陰盤奇門本身跨節氣時局數也會確實跳動，不是單純日級精度的誤差。
+// ⚠️ 尚待確認：這裡寫的是「分鐘級」精度（直接比對交節秒數），但東方命理系統本身的時間顆粒度是
+// 時辰（2小時一個單位），冬至/夏至交節時刻理論上可能只需要精確到「落在哪個時辰」，不必真的精確到
+// 分鐘——現有這批交叉驗證資料（4:24 vs 5:24）剛好同時跨了時辰（寅→卯）與節氣兩條線，無法排除
+// 其實只是時辰級精度在起作用。真正決定性的測試是「同一時辰內、卡在交節時刻前後」的兩筆資料（如
+// 2026/12/22 04:30 vs 04:55，同為寅時），若兩者結果相同，代表系統只到時辰級精度，屆時本函式的
+// 分鐘級比對邏輯需要改成「取交節時刻所在時辰的邊界」再比對，而非直接比對秒數本身。
+function getSolsticeTypePrecise(y, m, d, h, min) {
+  if (y < 1899) return null; // 沿用時盤已驗證範圍下限，維持保守（節氣表理論上可算更早，但無交叉驗證）
+  const target = new Date(Date.UTC(y, m - 1, d, h, min || 0));
+  let lastSolstice = null, lastSolsticeTime = -Infinity;
+  for (let yr = y - 1; yr <= y + 1; yr++) {
+    const table = _yangLoadJieQiTableForYear(yr);
+    ['冬至', '夏至'].forEach(name => {
+      const dt = table[name];
+      if (dt && dt.getTime() <= target.getTime() && dt.getTime() > lastSolsticeTime) {
+        lastSolstice = name;
+        lastSolsticeTime = dt.getTime();
+      }
+    });
+  }
+  return lastSolstice === '冬至' ? '陽' : (lastSolstice === '夏至' ? '陰' : null);
+}
+
+// ⚠️ 陰陽遁方向假設更新（2026.08）：老師明確表示日盤跟時盤、陰盤一樣有分陰陽遁（不同於年盤/月盤固定陰遁），
+// 這點提升為課堂依據的結構性事實。但實際切分／方向機制仍待資料驗證，目前寫入兩層假設：
+//   假設2（陰陽遁判定）：借用節氣冬至/夏至半年判定，判定本身已升級為分鐘級精度（見上方getSolsticeTypePrecise）
+//   假設3（陽遁方向翻轉）：時盤9.2節氣表本身陽遁半年局數遞增、陰遁半年遞減，若日盤遵循同一原則，
+//     陽遁期間應把現有陰遁遞減公式鏡像成遞增。此為「方向翻轉、但不重置」版本——沿用同一個錨點與
+//     diffDays線性計數，只是陽遁時改用 1+(n mod9) 遞增映射，陰遁維持 9-(n mod9) 遞減映射（已驗證）。
+//     尚未排除的另一種可能：冬至/夏至邊界不是平滑翻轉，而是整個歸零重置（見排盤規則.md 9.5節待驗證）；
+//     此版本尚無法處理重置情境，需要2026/12/21-23冬至前後跨邊界資料才能判斷是翻轉還是重置。
+const DAY_JU_ANCHOR = new Date(Date.UTC(2026, 7, 3)); // 2026-08-03，日柱己酉，n mod 9 = 0（陰9局）
+function getDayJu(y, m, d, h, min) {
+  const solsticeType = getSolsticeTypePrecise(y, m, d, h, min); // 分鐘級精度判定（2026.08驗證，見上方註解）
+  if (!solsticeType) return null; // 早於已驗證範圍(1899年)，陰陽遁無法判定，比照時盤擋下
+  const target = new Date(Date.UTC(y, m - 1, d));
+  const diffDays = Math.round((target - DAY_JU_ANCHOR) / 86400000);
+  const nMod9 = ((diffDays % 9) + 9) % 9;
+  const isYang = solsticeType === '陽';
+  return {
+    solsticeType,
+    chartNum: isYang ? (1 + nMod9) : (9 - nMod9), // 陽遁：假設3鏡像遞增（未驗證）；陰遁：已驗證公式
+    _dunAssumption: isYang ? 3 : 2,
+    _verified: !isYang, // 陰遁分支已用8組實測資料驗證；陽遁分支純邏輯外推，尚無任何實測資料
+    _note: isYang
+      ? '⚠️陽遁公式為假設3（方向翻轉鏡像），尚無實測資料驗證，僅供對照；陰陽遁判定本身已為分鐘級精度（2026.08驗證）'
+      : '局數公式已驗證（2026.08，8組實測資料）；陰陽遁判定已為分鐘級精度（2026.08驗證）'
+  };
+}
+// ==================== 陽盤引擎結束 ====================
+
+// 地支序數
+const EARTH_BRANCH_LIST = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+
+// 數字根（各位數相加到一位數，0視為9）
+function digitalRoot(n) {
+  while (n > 9) {
+    n = String(n).split('').reduce((a, b) => a + parseInt(b), 0);
+  }
+  return n === 0 ? 9 : n;
+}
+
+// 取時辰地支
+function hourToBranch(h) {
+  // 子=23-1, 丑=1-3, ..., 亥=21-23
+  const idx = Math.floor((h + 1) / 2) % 12;
+  return EARTH_BRANCH_LIST[idx];
+}
+
+// ⚠️ 2026.08已棄用：此為原版陰盤陰陽遁判定，只比對到年月日（sDate把時分砍掉），是日級精度。
+// 2026.08用china95.net「陰盤奇門」實測資料證實：同一天內（2026/12/22庚午日）冬至交節時刻
+// （04:51）前後，4:24仍「阴遁八局」、5:24已「阳遁九局」，確認需要至少分鐘級（待驗證是否要收斂為
+// 時辰級，見getSolsticeTypePrecise上方註解）精度，此函式的日級精度不夠用，已改用下方
+// getSolsticeTypePrecise()取代（見castChart()呼叫處）。保留本函式僅供回溯對照，不再被呼叫。
+// 判斷陰陽遁：找開盤時間前最近的冬至或夏至
+function getSolsticeType(y, m, d, h) {
+  const openDate = new Date(y, m-1, d, h);
+
+  // 搜尋前兩年到當年的節氣，找最近一個冬至或夏至的名稱
+  let lastSolstice = null;
+
+  for (let yr = y - 1; yr <= y; yr++) {
+    const lunarYr = LunarYear.fromYear(yr);
+    const jieQiDays = lunarYr.getJieQiJulianDays();
+
+    // lunar-javascript 節氣順序固定，冬至是第0個，夏至是第12個（從冬至開始算）
+    // 用 Solar.fromJulianDay 取得日期，再用 getLunar().getJieQi() 確認名稱
+    for (let i = 0; i < jieQiDays.length; i++) {
+      const s = Solar.fromJulianDay(jieQiDays[i]);
+      const name = s.getLunar().getJieQi();
+      if (name === '冬至' || name === '夏至') {
+        const sDate = new Date(s.getYear(), s.getMonth()-1, s.getDay());
+        if (sDate <= openDate) lastSolstice = name;
+      }
+    }
+  }
+
+  return lastSolstice === '冬至' ? '陽' : '陰';
+}
+
+// 計算局數
+function getChartNumber(lunar, h, ec) {
+  const yearBranch = ec.getYear()[1];       // 年支（節氣換年，取四柱年柱地支）
+  const lunarMonth = Math.abs(lunar.getMonth()); // 農曆月
+  const lunarDay = lunar.getDay();       // 農曆日
+  const hourBranch = hourToBranch(h);         // 時支
+
+  const yearBranchIdx = EARTH_BRANCH_LIST.indexOf(yearBranch) + 1;
+  const hourBranchIdx = EARTH_BRANCH_LIST.indexOf(hourBranch) + 1;
+
+  const sum = yearBranchIdx + lunarMonth + lunarDay + hourBranchIdx;
+  return digitalRoot(sum);
+}
+
+// 實際順時針／逆時針（八神、八星、天盤天干、引干用）
+const HOUSE_CW  = [1, 8, 3, 4, 9, 2, 7, 6]; // 順時針
+const HOUSE_CCW = [1, 6, 7, 2, 9, 4, 3, 8]; // 逆時針
+
+// 共用：從 startHouse 起，沿 order 方向，把 items 陣列從 headIdx 偏移開始依序放入8個宮位
+// （八神、八星、天盤天干、引干普通法，皆為同一種「起點+方向+固定序列+偏移」的放置模式）
+function placeInOrder(startHouse, order, items, headIdx = 0) {
+  const startIdx = order.indexOf(parseInt(startHouse));
+  const result = {};
+  for (let i = 0; i < 8; i++) {
+    result[order[(startIdx + i) % 8]] = items[(headIdx + i) % 8];
+  }
+  return result;
+}
+
+// 六儀三奇順序
+const EARTH_STEM_ORDER = ['戊','己','庚','辛','壬','癸','丁','丙','乙'];
+
+// 九宮完整順序（含5，供路中判斷用）
+const HOUSE_FLY_ASC  = [1, 2, 3, 4, 5, 6, 7, 8, 9]; // 順時針含中宮
+const HOUSE_FLY_DESC = [9, 8, 7, 6, 5, 4, 3, 2, 1]; // 逆時針含中宮
+
+// 地盤固定對應：宮位→九星名稱、八門名稱
+const HOUSE_STAR = { 1:'天蓬', 2:'天芮', 3:'天沖', 4:'天輔', 6:'天心', 7:'天柱', 8:'天任', 9:'天英' };
+const HOUSE_GATE  = { 1:'休門', 2:'死門', 3:'傷門', 4:'杜門', 6:'開門', 7:'驚門', 8:'生門', 9:'景門' };
+
+// 八神固定順序
+const EIGHT_SPIRITS = ['值符','騰蛇','太陰','六合','白虎','玄武','九地','九天'];
+
+// 排八神：時天干宮起，陽遁實際順時針，陰遁實際逆時針
+function getSpiritMap(timeStemHouse, solsticeType) {
+  const order = solsticeType === '陽' ? HOUSE_CW : HOUSE_CCW;
+  return placeInOrder(timeStemHouse, order, EIGHT_SPIRITS);
+}
+
+// 地支→宮位對應表
+const BRANCH_TO_HOUSE = {
+  '子':1, '丑':8, '寅':8, '卯':3, '辰':4, '巳':4,
+  '午':9, '未':2, '申':2, '酉':7, '戌':6, '亥':6
+};
+
+// 宮位→地支對應表（由 BRANCH_TO_HOUSE 反推）
+const HOUSE_DZ = (() => {
+  const map = {};
+  Object.entries(BRANCH_TO_HOUSE).forEach(([dz, gong]) => {
+    if (!map[gong]) map[gong] = [];
+    map[gong].push(dz);
+  });
+  return map;
+})();
+
+// 馬星：時辰地支→馬星地支
+const TRAVEL_HORSE_TABLE = {
+  '申':'寅', '子':'寅', '辰':'寅',
+  '寅':'申', '午':'申', '戌':'申',
+  '巳':'亥', '酉':'亥', '丑':'亥',
+  '亥':'巳', '卯':'巳', '未':'巳'
+};
+
+// 時干序數
+const EIGHT_GATES = ['休門','生門','傷門','杜門','景門','死門','驚門','開門'];
+
+// 地盤宮位→八門 index（對應 EIGHT_GATES）
+const HOUSE_GATE_IDX = { 1:0, 2:5, 3:2, 4:3, 6:7, 7:6, 8:1, 9:4 };
+
+// 時干序數
+const HEAVEN_STEM_LIST = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
+
+// 排八門：從地盤值使門宮位走步，落點放值使門，其餘實際順時針放入
+function getGateMap(dutyGateHouse, solsticeType, timeStem) {
+  dutyGateHouse = parseInt(dutyGateHouse);
+  // 時干序數（甲=1…癸=10），起點算第一步，所以走 steps-1 步
+  const steps = HEAVEN_STEM_LIST.indexOf(timeStem) + 1;
+  // 走步用含中宮的九宮數字順序（中宮5為獨立計數站，不可提前併入坤2）
+  const walkOrder = solsticeType === '陽' ? HOUSE_FLY_ASC : HOUSE_FLY_DESC;
+  const startIdx = walkOrder.indexOf(dutyGateHouse);
+  // 走 steps-1 步（起點算第一步）
+  let landGong = walkOrder[(startIdx + steps - 1) % 9];
+  // 入中寄坤
+  if (landGong === 5) landGong = 2;
+
+  // 值使門的門名 index（中宮無門，查表時用寄坤後的2）
+  const shimenMenIdx = HOUSE_GATE_IDX[dutyGateHouse === 5 ? 2 : dutyGateHouse];
+
+  // 從落點起，實際順時針放入八門
+  const landIdx = HOUSE_CW.indexOf(landGong);
+  const result = {};
+  for (let i = 0; i < 8; i++) {
+    const gong = HOUSE_CW[(landIdx + i) % 8];
+    result[gong] = EIGHT_GATES[(shimenMenIdx + i) % 8];
+  }
+  return result;
+}
+
+// 排引干：值使門落宮起，時天干為頭，沿地盤實際順時針序列切入，永遠順時針放入
+// 星伏／門伏：純位置標記（八星/八門是否全部回到固定本宮），畫面顯示用，跟特例三觸發邏輯分開
+// 特例三/四觸發前提：① 星伏（isStarFrozen）② 引干閉環（isGuidingClosed，值使門落宮地盤干含effectiveStem）
+// 兩個觸發條件都成立才飛布；星伏/門伏的「位置」標記本身不直接決定要不要飛布
+// earthStemSeq：實際順時針讀出的地盤天干序列（8個位置，由呼叫端算好傳入，避免與getHeavenStemMap重複計算）
+function getHidingStemMap(dutyGateLandHouse, earthStemMap, earthStemSeq, timeStem, dutyStem, solsticeType, timeStemHouse, dutyStemHouse) {
+  dutyGateLandHouse = parseInt(dutyGateLandHouse);
+
+  // 決定實際使用的時干（甲不在地盤時改用符頭）
+  const effectiveStem = (timeStem === '甲') ? dutyStem : timeStem;
+
+  // 星伏（純位置）：時干所在地盤宮位 是否＝符頭所在地盤宮位（八星、天盤天干排列同一起點）
+  const isStarFrozen = String(timeStemHouse) === String(dutyStemHouse);
+
+  // 門伏（純位置）：值使門落宮 是否＝值使門固定本宮（＝符頭所在地盤宮位）。八門同一起點同一offset，單點檢查即代表全部八門
+  const isGateFrozen = String(dutyGateLandHouse) === String(dutyStemHouse);
+
+  // 引干閉環（觸發特例三用，內容檢查，跟門伏的位置檢查是不同條件）：
+  // 值使門落宮的地盤干 是否包含 effectiveStem
+  const diStemAtLand = earthStemMap[dutyGateLandHouse] || '';
+  const isGuidingClosed = diStemAtLand.includes(effectiveStem);
+
+  const isTripleSame = isStarFrozen && isGuidingClosed;
+
+  let guidingMap;
+  if (isTripleSame) {
+    const stemOrder = EARTH_STEM_ORDER; // 戊己庚辛壬癸丁丙乙
+    const walkFull = solsticeType === '陽'
+      ? [5,6,7,8,9,1,2,3,4]
+      : [5,4,3,2,1,9,8,7,6];
+
+    // 飛布函數：將 centerStem 入中宮飛布，回傳 flyMap（中宮寄坤二前）
+    function doFlyRaw(centerStem) {
+      const centerIdx = stemOrder.indexOf(centerStem);
+      const fm = {};
+      for (let i = 0; i < 9; i++) {
+        const gan = stemOrder[(centerIdx + i) % 9];
+        const gong = walkFull[i];
+        fm[gong] = (fm[gong] || '') + gan;
+      }
+      return fm;
+    }
+
+    // 特例三：effectiveStem 入中飛布
+    let rawMap = doFlyRaw(effectiveStem);
+
+    // 中宮寄坤二
+    if (rawMap[5]) {
+      rawMap[2] = (rawMap[2] || '') + rawMap[5];
+      delete rawMap[5];
+    }
+
+    // 特例四：飛布後值使門落宮引干仍含 effectiveStem → 閉環
+    // 改用坤二另一個天干入中飛布
+    if ((rawMap[dutyGateLandHouse] || '').includes(effectiveStem)) {
+      const otherStem = (rawMap[2] || '').split('').find(c => c !== effectiveStem);
+      if (otherStem) {
+        rawMap = doFlyRaw(otherStem);
+        if (rawMap[5]) {
+          rawMap[2] = (rawMap[2] || '') + rawMap[5];
+          delete rawMap[5];
+        }
+      }
+    }
+
+    guidingMap = {};
+    [1,2,3,4,6,7,8,9].forEach(g => { guidingMap[g] = rawMap[g] || ''; });
+  } else {
+    // 普通情況：從值使門落宮起，以 effectiveStem 為頭，順時針放入
+    let headPos = earthStemSeq.findIndex(s => s.includes(effectiveStem));
+    if (headPos === -1) headPos = 0;
+    guidingMap = placeInOrder(dutyGateLandHouse, HOUSE_CW, earthStemSeq, headPos);
+  }
+
+  return { guidingMap, isStarFrozen, isGateFrozen };
+}
+
+const EIGHT_STARS = ['天蓬','天任','天沖','天輔','天英','天芮','天柱','天心'];
+
+// 排八星：地盤時干宮起，值符星為頭，固定蓬任沖輔英芮柱心順時針
+function getStarMap(timeStemHouse, dutyStar) {
+  const headIdx = EIGHT_STARS.indexOf(dutyStar);
+  return placeInOrder(timeStemHouse, HOUSE_CW, EIGHT_STARS, headIdx);
+}
+
+// 排天盤天干：地盤時干宮起，沿地盤實際順時針序列從符頭切入，永遠順時針放入
+// earthStemSeq：實際順時針讀出的地盤天干序列（8個位置，由呼叫端算好傳入，避免與getHidingStemMap重複計算）
+function getHeavenStemMap(timeStemHouse, earthStemSeq, dutyStem) {
+  // 找符頭所在位置（位置index）
+  const headPos = earthStemSeq.findIndex(s => s.includes(dutyStem));
+  return placeInOrder(timeStemHouse, HOUSE_CW, earthStemSeq, headPos);
+}
+
+// 排地盤天干
+// 回傳 { 宮位數: 天干 }，例如 { 1:'丙', 2:'戊乙', ... }
+function getEarthStemMap(solsticeType, chartNum) {
+  const result = {};
+  const order9 = solsticeType === '陽' ? HOUSE_FLY_ASC : HOUSE_FLY_DESC; // 含5，9格
+
+  // 找戊的起始宮位在9格順序中的 index
+  const startIdx = order9.indexOf(chartNum);
+
+  // 9個天干依序排入9格（含中宮5）
+  for (let i = 0; i < 9; i++) {
+    const gan = EARTH_STEM_ORDER[i];
+    const gong = order9[(startIdx + i) % 9];
+    if (result[gong]) {
+      result[gong] = result[gong] + gan;
+    } else {
+      result[gong] = gan;
+    }
+  }
+  // 中宮5原始天干（寄坤前），第六步排八門的數字走步需要用這個原始位置
+  const houseFiveStem = result[5] || null;
+
+  // 排完後，5宮天干寄坤（2）－ 此為「顯示用／空間旋轉用」的合併版本
+  if (result[5]) {
+    result[2] = result[2] ? result[2] + result[5] : result[5];
+    delete result[5];
+  }
+
+  return { earthStemMap: result, houseFiveStem };
+}
+
+// 根據時柱干支找旬首資料（用完整干支配對）
+function getDecInfo(timeStem, timeBranch) {
+  const stemIdx = HEAVEN_STEM_LIST.indexOf(timeStem);
+  const branchIdx = EARTH_BRANCH_LIST.indexOf(timeBranch);
+  const posInXun = stemIdx; // 在旬中的位置就是天干序號（甲=0, 乙=1, ...）
+  const decFirstBranchIdx = (branchIdx - posInXun + 12) % 12;
+  const decFirstBranch = EARTH_BRANCH_LIST[decFirstBranchIdx];
+
+  const decMap = {
+    '子': { xun: '甲子旬', dutyStem: '戊', voidBranches: ['戌','亥'] },
+    '戌': { xun: '甲戌旬', dutyStem: '己', voidBranches: ['申','酉'] },
+    '申': { xun: '甲申旬', dutyStem: '庚', voidBranches: ['午','未'] },
+    '午': { xun: '甲午旬', dutyStem: '辛', voidBranches: ['辰','巳'] },
+    '辰': { xun: '甲辰旬', dutyStem: '壬', voidBranches: ['寅','卯'] },
+    '寅': { xun: '甲寅旬', dutyStem: '癸', voidBranches: ['子','丑'] },
+  };
+  return decMap[decFirstBranch] || null;
+}
+
+// 驗證年月日時分是否為合理數字，不合理則標紅對應欄位並顯示訊息
+function validateDateInputs(y, m, d, h, min) {
+  const fields = [
+    { id: 'year', valid: Number.isInteger(y) && y >= 1, msg: '年份須為正整數' },
+    { id: 'month', valid: Number.isInteger(m) && m >= 1 && m <= 12, msg: '月份須在1–12之間' },
+    { id: 'hour', valid: Number.isInteger(h) && h >= 0 && h <= 23, msg: '時須在0–23之間' },
+    { id: 'minute', valid: Number.isInteger(min) && min >= 0 && min <= 59, msg: '分須在0–59之間' },
+  ];
+
+  // 日的合理範圍要先確定月份合法才能算當月天數，否則先用31上限粗略檢查
+  const daysInMonth = (Number.isInteger(y) && Number.isInteger(m) && m >= 1 && m <= 12)
+    ? new Date(y, m, 0).getDate()
+    : 31;
+  fields.push({ id: 'day', valid: Number.isInteger(d) && d >= 1 && d <= daysInMonth, msg: `日須在1–${daysInMonth}之間` });
+
+  const errorMsgs = [];
+  fields.forEach(f => {
+    const el = document.getElementById(f.id);
+    if (!el) return;
+    if (f.valid) {
+      el.classList.remove('input-error');
+    } else {
+      el.classList.add('input-error');
+      errorMsgs.push(f.msg);
+    }
+  });
+
+  const msgEl = document.getElementById('input-error-msg');
+  if (msgEl) {
+    if (errorMsgs.length) {
+      msgEl.textContent = errorMsgs.join('；');
+      msgEl.style.display = 'block';
+    } else {
+      msgEl.textContent = '';
+      msgEl.style.display = 'none';
+    }
+  }
+
+  return errorMsgs.length === 0;
+}
+
+function castChart() {
+  const y   = parseInt(document.getElementById('year').value);
+  const m   = parseInt(document.getElementById('month').value);
+  const d   = parseInt(document.getElementById('day').value);
+  const h   = parseInt(document.getElementById('hour').value);
+  const min = parseInt(document.getElementById('minute').value);
+
+  if (!validateDateInputs(y, m, d, h, min)) {
+    return;
+  }
+
+  // 重新排盤時清除上一次的長生高亮與宮位高亮，避免底線與標籤殘留舊資料
+  _activeChangshengHouse = null;
+  _activeChangshengIndex = -1;
+  clearChangsheng();
+  clearHighlight();
+  document.querySelectorAll('.gc-tian .stem-active, .gc-shen .stem-active').forEach(s => s.classList.remove('stem-active'));
+  const yongshenResetEl = document.getElementById('hb-yongshen');
+  if (yongshenResetEl) yongshenResetEl.textContent = '—';
+
+  // 子時跨日：23:00-23:59 屬於隔日子時，農曆換算需 +1 天，時辰改為 0
+  let lunarD = d, lunarM = m, lunarY = y, lunarH = h;
+  if (h === 23) {
+    const nextDay = new Date(y, m - 1, d + 1);
+    lunarY = nextDay.getFullYear();
+    lunarM = nextDay.getMonth() + 1;
+    lunarD = nextDay.getDate();
+    lunarH = 0;
+  }
+
+  const solar = Solar.fromYmdHms(lunarY, lunarM, lunarD, lunarH, min, 0);
+  const lunar = solar.getLunar();
+  const ec = lunar.getEightChar();
+
+  // 西元
+  document.getElementById('sy').textContent = y;
+  document.getElementById('sm').textContent = String(m).padStart(2,'0');
+  document.getElementById('sd').textContent = String(d).padStart(2,'0');
+  document.getElementById('st').textContent = String(h * 100 + min).padStart(4,'0');
+
+  // 農曆
+  document.getElementById('ly').textContent = lunar.getYear();
+  document.getElementById('lm').textContent = String(Math.abs(lunar.getMonth())).padStart(2,'0');
+  document.getElementById('ld').textContent = String(lunar.getDay()).padStart(2,'0');
+  document.getElementById('lt').textContent = String(h * 100 + min).padStart(4,'0');
+
+  // 四柱
+  const yGZ = ec.getYear();
+  const mGZ = ec.getMonth();
+  const dGZ = ec.getDay();
+  const hGZ = ec.getTime();
+
+  document.getElementById('gz-y-gan').textContent = yGZ[0];
+  document.getElementById('gz-y-zhi').textContent = yGZ[1];
+  document.getElementById('gz-m-gan').textContent = mGZ[0];
+  document.getElementById('gz-m-zhi').textContent = mGZ[1];
+  document.getElementById('gz-d-gan').textContent = dGZ[0];
+  document.getElementById('gz-d-zhi').textContent = dGZ[1];
+  document.getElementById('gz-h-gan').textContent = hGZ[0];
+  document.getElementById('gz-h-zhi').textContent = hGZ[1];
+
+  // 命盤模式：命宮＝時支固定位置，逆時針放入十二宮
+  if (MING_PAN_MODE) {
+    renderMingPan(hGZ[1]);
+  }
+
+  // 陽盤日/月/年盤：旬首/符頭/空亡/馬星/值符值使/引干，改用對應的干支；陰盤與陽盤時盤維持用時干支
+  const effGZ = (PLATE_MODE === 'yang' && PLATE_SUBMODE === 'day') ? dGZ
+              : (PLATE_MODE === 'yang' && PLATE_SUBMODE === 'month') ? mGZ
+              : (PLATE_MODE === 'yang' && PLATE_SUBMODE === 'year') ? yGZ
+              : hGZ;
+
+  // 陰陽遁 + 局數
+  let solsticeType, chartNum, yangInfo = null;
+  if (PLATE_MODE === 'yang') {
+    // 年盤／月盤：改用三元甲子公式（2026.08實測驗證，見 getYearSanYuanJu／getMonthWuXingJu 註解）；
+    // 時盤：維持沿用9.2節氣表＋9.3置閏引擎
+    if (PLATE_SUBMODE === 'year') {
+      yangInfo = getYearSanYuanJu(y, m, d, yGZ); // 純mod 180公式，無方向性限制，任何年份皆可算
+    } else if (PLATE_SUBMODE === 'month') {
+      yangInfo = getMonthWuXingJu(y, m, d, yGZ); // 純mod 15公式，同上
+    } else if (PLATE_SUBMODE === 'day') {
+      yangInfo = getDayJu(lunarY, lunarM, lunarD, lunarH, min); // 純日柱線性公式（2026.08驗證）；用子時跨日調整後的日期（與dGZ同基準，23:00起算次日），陰陽遁判定已為分鐘級精度（2026.08驗證，見getSolsticeTypePrecise）
+    } else {
+      yangInfo = getYangChartNumber(y, m, d); // 時盤：鏈式模擬，僅能從1899-12-22正授錨點往後算
+    }
+    if (!yangInfo) {
+      const msgEl = document.getElementById('input-error-msg');
+      if (msgEl) {
+        msgEl.textContent = PLATE_SUBMODE === 'day'
+          ? '此日期早於已驗證陰陽遁判定錨點範圍（1899-12-22），暫不支援日盤排盤'
+          : '此日期早於陽盤時家(置閏)已驗證錨點範圍（1899-12-22），暫不支援排盤';
+        msgEl.style.display = 'block';
+      }
+      return;
+    }
+    solsticeType = yangInfo.solsticeType;
+    chartNum = yangInfo.chartNum;
+  } else {
+    solsticeType = getSolsticeTypePrecise(y, m, d, h, min); // 2026.08修正：改用分鐘級精度判定，取代原本的日級精度getSolsticeType()（見下方⚠️保留原函式供對照）
+    if (solsticeType === null) {
+      const msgEl = document.getElementById('input-error-msg');
+      if (msgEl) {
+        msgEl.textContent = '此日期早於已驗證陰陽遁判定錨點範圍（1899年），暫不支援排盤';
+        msgEl.style.display = 'block';
+      }
+      return;
+    }
+    chartNum = getChartNumber(lunar, h, ec);
+  }
+  document.getElementById('hb-qiju').textContent = solsticeType + chartNum + '局';
+
+  // 命盤模式：排大限（需先有陰陽遁＋局數才能算，故安排在此，晚於 renderMingPan 的呼叫點）
+  if (MING_PAN_MODE) {
+    renderDaXian(solsticeType, chartNum, MING_PAN_GENDER);
+  }
+
+  // 排地盤天干
+  const { earthStemMap, houseFiveStem } = getEarthStemMap(solsticeType, chartNum);
+  // 地盤天干寫入將在後面取得 dutyStemHouse 後統一處理（入墓判定需要）
+
+  // 旬首 / 符頭 / 空亡
+  const decInfo = getDecInfo(effGZ[0], effGZ[1]);
+  if (decInfo) {
+    document.getElementById('hb-xun').textContent = decInfo.xun.replace('旬', '');
+    document.getElementById('hb-dutyStem').textContent = decInfo.dutyStem;
+    document.getElementById('hb-voidBranches').textContent = decInfo.voidBranches.join('、');
+
+    // 清除所有 kong 與 ma
+    [1,2,3,4,6,7,8,9].forEach(g => {
+      const kongEl = document.getElementById('void-' + g);
+      if (kongEl) kongEl.innerHTML = '';
+      const maEl = document.getElementById('horse-' + g);
+      if (maEl) maEl.innerHTML = '';
+    });
+
+    // 先計算馬和空的宮位
+    const horseZhi = TRAVEL_HORSE_TABLE[effGZ[1]];
+    const horseHouse = horseZhi ? BRANCH_TO_HOUSE[horseZhi] : null;
+
+    // 馬先放（放入 horse- 格）
+    if (horseHouse) {
+      const el = document.getElementById('horse-' + horseHouse);
+      if (el) el.innerHTML = '<span class="tag horse"><span>馬</span></span>';
+      document.getElementById('hb-travel-horse').textContent = horseZhi;
+    }
+
+    // 空後放（空在右）
+    const marked = new Set();
+    decInfo.voidBranches.forEach(zhi => {
+      const g = BRANCH_TO_HOUSE[zhi];
+      const el = document.getElementById('void-' + g);
+      if (el && !marked.has(g)) {
+        el.innerHTML += '<span class="tag void">空</span>';
+        marked.add(g);
+      }
+    });
+
+    // 值符宮：符頭天干在地盤的宮位
+    const dutyStemHouse = Object.keys(earthStemMap).find(g => earthStemMap[g].includes(decInfo.dutyStem));
+
+    if (dutyStemHouse) {
+      const dutyStar = HOUSE_STAR[dutyStemHouse];
+      document.getElementById('hb-zhifu').textContent = dutyStar || '—';
+      document.getElementById('hb-zhishi').textContent = HOUSE_GATE[dutyStemHouse] || '—';
+
+      // 地盤時干宮：時柱天干在地盤的宮位
+      // 六甲伏吟：時干為甲，甲不在地盤，改用符頭宮位（甲遁伏於值符下）
+      let timeStemHouse = Object.keys(earthStemMap).find(g => earthStemMap[g].includes(effGZ[0]));
+      if (!timeStemHouse) timeStemHouse = dutyStemHouse;
+
+      if (timeStemHouse) {
+        try {
+          // 排八神
+          const spiritMap = getSpiritMap(timeStemHouse, solsticeType);
+          // 排八星
+          const starMap = getStarMap(timeStemHouse, dutyStar);
+          // 地盤天干序列（實際順時針讀出，8個位置，寄干宮保留兩個天干）－供天盤天干、引干共用，避免重複計算
+          const earthStemSeq = HOUSE_CW.map(g => earthStemMap[g] || '');
+          // 排天盤天干
+          const heavenStemMap = getHeavenStemMap(timeStemHouse, earthStemSeq, decInfo.dutyStem);
+          // 排八門：值使門地盤宮位
+          // 走步起點需用「寄坤前」的原始宮位──若符頭天干恰為中宮5寄坤前的原始天干，
+          // 數字走步（含中宮）的起點應為5本身，不可用已合併到坤2的位置（5與2在九宮數字
+          // 循環中是不同的計數站，提前合併會讓起點算錯）
+          const dutyStemHouseForGate = (houseFiveStem && decInfo.dutyStem === houseFiveStem) ? 5 : dutyStemHouse;
+          const gateMap = getGateMap(dutyStemHouseForGate, solsticeType, effGZ[0]);
+          // 找值使門落宮（天盤使門所在宮位）
+          const shimenName = HOUSE_GATE[dutyStemHouse];
+          const dutyGateLandHouse = Object.keys(gateMap).find(g => gateMap[g] === shimenName);
+          // 星反：天蓬落在離9 → 星反成立
+          const isStarReversed = Object.keys(starMap).find(g => starMap[g] === '天蓬') === '9';
+          // 門反：休門落在離9 → 門反成立
+          const isGateReversed = Object.keys(gateMap).find(g => gateMap[g] === '休門') === '9';
+
+          // 排引干
+          const guidingResult = dutyGateLandHouse
+            ? getHidingStemMap(dutyGateLandHouse, earthStemMap, earthStemSeq, effGZ[0], decInfo.dutyStem, solsticeType, timeStemHouse, dutyStemHouse)
+            : { guidingMap: {}, isStarFrozen: false, isGateFrozen: false, isStarReversed: false };
+          const hidingStemMap = guidingResult.guidingMap;
+
+          // 排盤：單純顯示陰盤/陽盤/命盤（最外層模式本身）
+          // 標記：其餘細節（時家置閏/日家/月家/年家、男命/女命）＋伏吟反吟（星伏／門伏／星反／門反，標紅）都放這裡，可以塞一筆以上的資料
+          const fuyinEl = document.getElementById('hb-fuyin');
+          const markerEl = document.getElementById('hb-marker');
+          const fuyinLabels = [];
+          if (guidingResult.isStarFrozen) fuyinLabels.push('星伏');
+          if (guidingResult.isGateFrozen) fuyinLabels.push('門伏');
+          if (isStarReversed) fuyinLabels.push('星反');
+          if (isGateReversed) fuyinLabels.push('門反');
+          if (fuyinEl) {
+            fuyinEl.textContent = MING_PAN_MODE ? '命盤' : (PLATE_MODE === 'yang' ? '陽盤' : '陰盤');
+          }
+          if (markerEl) {
+            const detailParts = [];
+            if (MING_PAN_MODE) {
+              detailParts.push('時家置閏');
+              detailParts.push(MING_PAN_GENDER === 'male' ? '男命' : '女命');
+            } else if (PLATE_MODE === 'yang') {
+              // 日家標記：陰遁分支已驗證，陽遁分支是假設3（方向翻轉鏡像）尚無實測資料，加註提醒
+              const dayLabel = (PLATE_SUBMODE === 'day')
+                ? (solsticeType === '陽' ? '日家（陽遁局數未驗證）' : '日家')
+                : '日家';
+              detailParts.push({time:'時家置閏',day:dayLabel,month:'月家',year:'年家'}[PLATE_SUBMODE] || '時家置閏');
+            }
+            let html = detailParts.join('、');
+            if (fuyinLabels.length) {
+              const markerSpan = '<span style="color:#c0392b">' + fuyinLabels.join('') + '</span>';
+              html = html ? (html + '，' + markerSpan) : markerSpan;
+            }
+            markerEl.innerHTML = html || '—';
+          }
+
+          [1,2,3,4,6,7,8,9].forEach(g => {
+            const shenEl = document.getElementById('sh-' + g);
+            const starEl = document.getElementById('star-' + g);
+            const tianEl = document.getElementById('tian-' + g);
+            const gateEl = document.getElementById('gate-' + g);
+            const yinEl  = document.getElementById('yin-' + g);
+            const diEl   = document.getElementById('di-' + g);
+            if (shenEl) shenEl.textContent = spiritMap[g] || '';
+            if (starEl) starEl.textContent = starMap[g] || '';
+            // 天盤天干（入墓判定，含甲入墓特例）
+            if (tianEl) {
+              const isDutyHouse = String(g) === String(timeStemHouse);
+              tianEl.innerHTML = renderStemHTML(heavenStemMap[g] || '', g, decInfo.dutyStem, isDutyHouse);
+            }
+            if (gateEl) gateEl.innerHTML = renderGateHTML(gateMap[g] || '', g);
+            // 地盤天干（入墓判定，含甲入墓特例）
+            if (diEl) {
+              const isDutyHouse = String(g) === String(dutyStemHouse);
+              diEl.innerHTML = renderStemHTML(earthStemMap[g] || '', g, decInfo.dutyStem, isDutyHouse);
+            }
+            // 引干（不判定四害）——僅陰盤與陽盤時盤顯示；陽盤日/月/年盤經老師的排盤工具比對確認本來就不顯示引干（非待確認事項）
+            const showGuidingStem = !(PLATE_MODE === 'yang' && PLATE_SUBMODE !== 'time');
+            if (yinEl) {
+              const val = showGuidingStem ? (hidingStemMap[g] || '') : '';
+              if (!val) { yinEl.innerHTML = ''; return; }
+              if ((g === 3 || g === 7) && val.length > 1) {
+                yinEl.innerHTML = val.split('').map(ch => `<span>${ch}</span>`).join('');
+              } else {
+                yinEl.textContent = val;
+              }
+            }
+          });
+        } catch(e) {
+          console.log('ERROR:', e.message, e.stack);
+        }
+      }
+    }
+  }
+
+  document.getElementById('paipan-result').style.display = 'block';
+  // 截圖按鈕只在桌面或 iPad 顯示（手機用系統截圖即可）
+  const isIPad = /iPad/.test(navigator.userAgent) ||
+                 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isDesktop = navigator.maxTouchPoints === 0 || isIPad;
+  if (isDesktop) {
+    document.getElementById('btn-capture-wrap').style.display = 'block';
+  }
+  document.getElementById('paipan-result').scrollIntoView({ behavior: 'smooth' });
+
+  clearHighlight();
+}
+
+// ══════════════════════════════════
+// 盤面紀錄（localStorage）
+// ══════════════════════════════════
+const RECORDS_KEY = 'qimenRecords';
+const PREDICTOR_KEY = 'qimenPredictorProfile';
+
+function getPredictorProfile() {
+  try { return JSON.parse(localStorage.getItem(PREDICTOR_KEY)) || null; }
+  catch { return null; }
+}
+
+function setPredictorGender(gender) {
+  localStorage.setItem(PREDICTOR_KEY, JSON.stringify({ gender }));
+  renderPredictorGender();
+}
+
+function renderPredictorGender() {
+  const profile = getPredictorProfile();
+  document.querySelectorAll('#rec-predictor-gender button').forEach(b => {
+    b.classList.toggle('active', !!profile && b.dataset.val === profile.gender);
+  });
+}
+
+function getRecords() {
+  try { return JSON.parse(localStorage.getItem(RECORDS_KEY)) || []; }
+  catch { return []; }
+}
+
+function saveRecords(list) {
+  localStorage.setItem(RECORDS_KEY, JSON.stringify(list));
+}
+
+function pickChoice(btn) {
+  btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// 案主選擇連動：自測＝面測（日干宮位為主），測法自動帶入並鎖定
+function pickClientChoice(btn) {
+  pickChoice(btn);
+  const isSelf = btn.dataset.val === '自測';
+  document.querySelectorAll('#rec-method button').forEach(b => {
+    if (isSelf) {
+      b.classList.toggle('active', b.dataset.val === '面測');
+      b.disabled = b.dataset.val !== '面測';
+      b.style.opacity = b.disabled ? '.35' : '';
+    } else {
+      b.disabled = false;
+      b.style.opacity = '';
+    }
+  });
+}
+
+function getChoice(groupId) {
+  const el = document.querySelector('#' + groupId + ' button.active');
+  return el ? el.dataset.val : null;
+}
+
+function currentChartTimeStr() {
+  const y  = document.getElementById('year').value;
+  const m  = document.getElementById('month').value;
+  const d  = document.getElementById('day').value;
+  const h  = document.getElementById('hour').value;
+  const mn = document.getElementById('minute').value;
+  if (!y || !m || !d || h === '' || mn === '') return null;
+  return `${y}-${pad(+m)}-${pad(+d)} ${pad(+h)}:${pad(+mn)}`;
+}
+
+// 四柱計算核心：套用與 performChart 相同的子時跨日規則，供多處呼叫共用
+function computeFourPillars(y, m, d, h, mn) {
+  if (!y || !m || !d || isNaN(h) || isNaN(mn)) return null;
+
+  let lunarY = y, lunarM = m, lunarD = d, lunarH = h;
+  if (h === 23) {
+    const nextDay = new Date(y, m - 1, d + 1);
+    lunarY = nextDay.getFullYear();
+    lunarM = nextDay.getMonth() + 1;
+    lunarD = nextDay.getDate();
+    lunarH = 0;
+  }
+
+  try {
+    const solar = Solar.fromYmdHms(lunarY, lunarM, lunarD, lunarH, mn, 0);
+    const ec = solar.getLunar().getEightChar();
+    const yGZ = ec.getYear(), mGZ = ec.getMonth(), dGZ = ec.getDay(), hGZ = ec.getTime();
+    return `${yGZ}　${mGZ}　${dGZ}　${hGZ}`;
+  } catch (e) {
+    return null;
+  }
+}
+
+// 依紀錄存的 chartTime（"YYYY-MM-DD HH:mm"）反推四柱八字，只存 chartTime、不重複存四柱
+function fourPillarsFromChartTime(chartTime) {
+  const match = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/.exec(chartTime || '');
+  if (!match) return null;
+  const [, y, m, d, h, mn] = match.map(Number);
+  return computeFourPillars(y, m, d, h, mn);
+}
+
+// 時間＋四柱上下對齊顯示：兩列四欄 grid，數字對齊其下方對應的柱
+function buildTimePillarsGrid(chartTime) {
+  const match = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/.exec(chartTime || '');
+  const pillars = fourPillarsFromChartTime(chartTime);
+  if (!match || !pillars) return null;
+  const cols = pillars.split('　');
+  if (cols.length !== 4) return null;
+  const dateParts = [match[1], match[2], match[3], `${match[4]}${match[5]}`];
+  const topRow = dateParts.map(t => `<span class="tg-date">${t}</span>`).join('');
+  const bottomRow = cols.map(p => `<span class="tg-pillar">${p}</span>`).join('');
+  return `<div class="tg-wrap"><div class="tg-side"></div><div class="tg-grid">${topRow}${bottomRow}</div><div class="tg-side"></div></div>`;
+}
+
+function openRecordsPanel() {
+  const t = currentChartTimeStr();
+  const timeEl = document.getElementById('rec-chart-time');
+  if (t) {
+    const timeGrid = buildTimePillarsGrid(t);
+    timeEl.innerHTML = timeGrid
+      ? `<div class="rec-item-timegrid" style="font-size:14px;color:#333;display:inline-block;text-align:left;">${timeGrid}</div>`
+      : t;
+  } else {
+    timeEl.textContent = '（尚未排盤）';
+  }
+  renderPredictorGender();
+  renderRecordList();
+  setRecMsg('', '');
+  document.getElementById('records-overlay').classList.add('open');
+}
+
+function closeRecordsPanel() {
+  document.getElementById('records-overlay').classList.remove('open');
+}
+
+function setRecMsg(text, type) {
+  const el = document.getElementById('rec-msg');
+  el.textContent = text;
+  el.className = 'rec-msg' + (type ? ' ' + type : '');
+}
+
+function saveRecord() {
+  const chartTime = currentChartTimeStr();
+  if (!chartTime) { setRecMsg('請先排盤，再儲存紀錄', 'err'); return; }
+
+  const question = document.getElementById('rec-question').value.trim();
+  const clientChoice = getChoice('rec-client-gender');
+  const method = getChoice('rec-method');
+
+  if (!question) { setRecMsg('請輸入問題描述', 'err'); return; }
+  if (!clientChoice) { setRecMsg('請選擇案主（男／女／自測）', 'err'); return; }
+  if (!method) { setRecMsg('請選擇測法', 'err'); return; }
+
+  // 預測師性別：第一次使用時需先於「預測師性別」選擇
+  const profile = getPredictorProfile();
+  if (!profile) {
+    setRecMsg('第一次使用，請先在下方「預測師性別」選擇', 'err');
+    return;
+  }
+
+  const isSelf = clientChoice === '自測';
+  const record = {
+    id: Date.now(),
+    chartTime,
+    question,
+    clientGender: isSelf ? profile.gender : clientChoice,
+    isSelf,
+    method,
+    predictorGender: profile.gender,
+    createdAt: new Date().toISOString()
+  };
+
+  const list = getRecords();
+  list.unshift(record);
+  saveRecords(list);
+
+  document.getElementById('rec-question').value = '';
+  document.querySelectorAll('#rec-client-gender button, #rec-method button')
+    .forEach(b => { b.classList.remove('active'); b.disabled = false; b.style.opacity = ''; });
+  setRecMsg('已儲存', 'ok');
+  renderRecordList();
+}
+
+// 匯出紀錄：面板內預覽純文字（可複製／下載），非原生對話框
+function buildExportText() {
+  const list = getRecords();
+  return list.map(r => {
+    const client = r.isSelf ? '自測' : `案主：${r.clientGender}`;
+    const pillars = fourPillarsFromChartTime(r.chartTime);
+    const pillarLine = pillars ? `\n${pillars}` : '';
+    return `${r.chartTime}${pillarLine}\n${r.question}\n${client}　${r.method}　預測師：${r.predictorGender}`;
+  }).join('\n\n');
+}
+
+function toggleExportPreview() {
+  const box = document.getElementById('export-preview');
+  if (box.classList.contains('open')) {
+    box.classList.remove('open');
+    box.innerHTML = '';
+    return;
+  }
+  const list = getRecords();
+  if (!list.length) {
+    box.innerHTML = '<div class="export-preview-msg" style="color:#bbb;">尚無紀錄可匯出</div>';
+    box.classList.add('open');
+    return;
+  }
+  const text = buildExportText();
+  box.innerHTML = `
+    <pre id="export-text">${escapeHtml(text)}</pre>
+    <div class="export-preview-actions">
+      <button onclick="copyExportText()">複製</button>
+      <button onclick="downloadExportText()">下載文字檔</button>
+    </div>
+    <div class="export-preview-msg" id="export-preview-msg"></div>
+  `;
+  box.classList.add('open');
+}
+
+function copyExportText() {
+  const text = document.getElementById('export-text').textContent;
+  const msg = document.getElementById('export-preview-msg');
+  navigator.clipboard.writeText(text)
+    .then(() => { msg.textContent = '已複製到剪貼簿'; })
+    .catch(() => { msg.textContent = '複製失敗，請手動選取文字複製'; msg.style.color = '#c0392b'; });
+}
+
+function downloadExportText() {
+  const text = document.getElementById('export-text').textContent;
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const blob = new Blob([text], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `qimen-records-${dateStr}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  const msg = document.getElementById('export-preview-msg');
+  if (msg) msg.textContent = '已下載檔案';
+}
+
+function renderRecordList() {
+  const list = getRecords();
+  const wrap = document.getElementById('rec-list');
+  if (!list.length) {
+    wrap.innerHTML = '<div class="rec-empty">尚無紀錄</div>';
+    return;
+  }
+  wrap.innerHTML = list.map(r => {
+    const client = r.isSelf ? '自測' : `案主：${r.clientGender}`;
+    const timeGrid = buildTimePillarsGrid(r.chartTime);
+    const timeHtml = timeGrid
+      ? `<div class="rec-item-timegrid">${timeGrid}</div>`
+      : `<div class="rec-item-time">${r.chartTime}</div>`;
+    return `<div class="rec-item" id="rec-item-${r.id}">
+      ${timeHtml}
+      <div class="rec-item-q">${escapeHtml(r.question)}</div>
+      <div class="rec-item-meta">${client}　${r.method}　預測師：${r.predictorGender}</div>
+      <div class="rec-item-actions">
+        <button onclick="askLoadRecord(${r.id})">載入盤面</button>
+        <button class="rec-del" onclick="askDeleteRecord(${r.id})">刪除</button>
+      </div>
+      <div class="rec-item-confirm" id="rec-confirm-${r.id}"></div>
+    </div>`;
+  }).join('');
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  })[c]);
+}
+
+function clearAllConfirms() {
+  document.querySelectorAll('.rec-item-confirm').forEach(el => el.innerHTML = '');
+}
+
+function askLoadRecord(id) {
+  clearAllConfirms();
+  const el = document.getElementById('rec-confirm-' + id);
+  if (!el) return;
+  el.innerHTML = `<div style="margin-top:6px;padding:8px;background:#f7f5f2;border-radius:4px;font-size:12px;color:#555;">
+    載入此盤面？目前盤面將被切換。
+    <div style="display:flex;gap:8px;margin-top:6px;">
+      <button onclick="loadRecord(${id})" style="padding:3px 14px;border:none;border-radius:14px;background:#444;color:#fff;font-family:inherit;font-size:12px;cursor:pointer;">確認載入</button>
+      <button onclick="clearAllConfirms()" style="padding:3px 14px;border:1px solid #ddd;border-radius:14px;background:#fff;color:#666;font-family:inherit;font-size:12px;cursor:pointer;">取消</button>
+    </div>
+  </div>`;
+}
+
+function loadRecord(id) {
+  const r = getRecords().find(x => x.id === id);
+  if (!r) return;
+  const m = r.chartTime.match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/);
+  if (!m) return;
+  document.getElementById('year').value = m[1];
+  document.getElementById('month').value = m[2];
+  document.getElementById('day').value = m[3];
+  document.getElementById('hour').value = m[4];
+  document.getElementById('minute').value = m[5];
+  closeRecordsPanel();
+  clearHighlight();
+  castChart();
+}
+
+function askDeleteRecord(id) {
+  clearAllConfirms();
+  const el = document.getElementById('rec-confirm-' + id);
+  if (!el) return;
+  el.innerHTML = `<div style="margin-top:6px;padding:8px;background:#faf3f2;border-radius:4px;font-size:12px;color:#a33;">
+    確定刪除此筆紀錄？
+    <div style="display:flex;gap:8px;margin-top:6px;">
+      <button onclick="deleteRecord(${id})" style="padding:3px 14px;border:none;border-radius:14px;background:#c0392b;color:#fff;font-family:inherit;font-size:12px;cursor:pointer;">確認刪除</button>
+      <button onclick="clearAllConfirms()" style="padding:3px 14px;border:1px solid #ddd;border-radius:14px;background:#fff;color:#666;font-family:inherit;font-size:12px;cursor:pointer;">取消</button>
+    </div>
+  </div>`;
+}
+
+function deleteRecord(id) {
+  saveRecords(getRecords().filter(x => x.id !== id));
+  renderRecordList();
+}
+</script>
+
+</div><!-- end paipan-result -->
+
+<div id="btn-capture-wrap" style="display:none; text-align:center; padding:10px 0 0;">
+  <button onclick="captureChart()" style="display:inline-block;padding:9px 22px;border:1px solid #ddd;border-radius:20px;font-size:13px;color:#666;background:#fff;letter-spacing:.05em;cursor:pointer;">📷 儲存截圖</button>
+</div>
+
+<div id="btn-quick-wrap" style="text-align:center; padding:10px 0 0;">
+  <div id="btn-quick-row" class="btn-quick-row" style="width:calc(100% - 44px); margin-left:auto; margin-right:auto;">
+    <button class="btn-quick" onclick="shiftDate(-1)">前日</button>
+    <button class="btn-quick" onclick="shiftHour(-2)">上時</button>
+    <button class="btn-quick" onclick="shiftHour(+2)">下時</button>
+    <button class="btn-quick" onclick="shiftDate(+1)">次日</button>
+  </div>
+</div>
+
+  </div>
+  <div style="text-align:center;padding:12px 20px 16px;font-family:'M PLUS Rounded 1c',sans-serif">
+    <a href="https://buy.stripe.com/7sY8wQe1NdhXbkV98G8Vi01" target="_blank" style="display:inline-block;padding:4px 14px;border:1px solid #ddd;border-radius:14px;font-size:12px;color:#888;text-decoration:none;letter-spacing:.08em;transition:all .15s" onmouseover="this.style.borderColor='#bbb';this.style.color='#555'" onmouseout="this.style.borderColor='#ddd';this.style.color='#888'">☕ 請我喝杯咖啡</a>
+  </div>
+  <div style="text-align:center;padding:16px 20px 24px;font-family:'M PLUS Rounded 1c',sans-serif;font-size:11px;color:#bbb;letter-spacing:.05em">
+    <span style="display:inline-flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:0">© 2026 Eric CH / <a id="footerStudio" href="https://www.therootshollow.com" target="_blank" style="color:inherit;text-decoration:none;">樹根樹洞</a>・<a href="https://instagram.com/eric.hypnotist" target="_blank" style="color:#bbb;text-decoration:none;display:inline-flex;align-items:center;gap:4px"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg> @eric.hypnotist</a></span><br>
+    <a href="https://www.therootshollow.com" target="_blank" style="color:#bbb;text-decoration:none">www.therootshollow.com</a>
+  </div>
+</div><!-- end page -->
+</body>
+</html>
