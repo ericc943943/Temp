@@ -950,6 +950,7 @@
   }
   .travel-inline-board-toggle { font-size: 12px; }
   .travel-inline-board-toggle.active { background: #2471a3; color: #fff; }
+  .travel-inline-rotate { font-size: 20px; }
   .travel-inline-rotate.active { background: #2471a3; color: #fff; }
   .travel-inline-locate { position: absolute; z-index: 2; bottom: 8px; right: 8px; color: #2471a3; }
   .travel-inline-exit:active, .travel-inline-locate:active, .travel-inline-board-toggle:active, .travel-inline-rotate:active { opacity: .85; }
@@ -1875,8 +1876,8 @@ let inlineTravelPositionMarker = null;
 function initializeInlineTravelMap() {
   if (inlineTravelMap || typeof L === 'undefined') return;
   // 未取得定位前維持中性世界視角；不可預設任何國家或地區
-  // dragging:false — 容器整體180度旋轉(南上北下)後拖曳座標判讀會反向，此情境核心需求是「確認方位」不是「瀏覽地圖」，
-  // 拖曳乾脆關掉，靠自動定位置中＋拉回鈕即可，縮放不受旋轉影響，維持開啟
+  // dragging 預設關閉：南上北下（預設方向）時容器整體旋轉180度，拖曳座標判讀會反向；
+  // 轉正（北上南下，見 toggleTravelMapRotate）後不再反向，屆時才開放拖曳
   inlineTravelMap = L.map('travel-inline-map', { zoomControl: false, attributionControl: false, dragging: false }).setView([20, 0], 2);
   L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
     maxZoom: 20,
@@ -1974,6 +1975,11 @@ function toggleTravelMapRotate() {
   travelMapRotated = !travelMapRotated;
   outer.classList.toggle('travel-map-rotated', travelMapRotated);
   if (btn) btn.classList.toggle('active', travelMapRotated);
+  // 轉正（北上南下）後拖曳方向判讀不再反向，開放拖曳；轉回預設南上北下時關閉，理由同容器旋轉的原始限制
+  if (inlineTravelMap && inlineTravelMap.dragging) {
+    if (travelMapRotated) inlineTravelMap.dragging.enable();
+    else inlineTravelMap.dragging.disable();
+  }
   // 180度旋轉＝對角互換；同一組配對再點一次即復原（toggle 天然可逆，不需另存原始順序）
   swapTravelHousePair(4, 6);
   swapTravelHousePair(9, 1);
