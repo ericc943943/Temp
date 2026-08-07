@@ -950,7 +950,8 @@
   }
   .travel-inline-board-toggle { font-size: 12px; }
   .travel-inline-board-toggle.active { background: #2471a3; color: #fff; }
-  .travel-inline-rotate { font-size: 20px; }
+  .travel-inline-rotate { font-size: 24px; line-height: 1; }
+  .travel-inline-rotate span { display: block; transform: translate(0.5px, 0.5px); } /* ⟳ 字符本身視覺重心偏左上，微調置中 */
   .travel-inline-rotate.active { background: #2471a3; color: #fff; }
   .travel-inline-locate { position: absolute; z-index: 2; bottom: 8px; right: 8px; color: #2471a3; }
   .travel-inline-exit:active, .travel-inline-locate:active, .travel-inline-board-toggle:active, .travel-inline-rotate:active { opacity: .85; }
@@ -1208,7 +1209,7 @@
   </div>
   <!-- 2b：旋轉鈕獨立置於 2 宮正上方，跟左側那組分開 -->
   <div class="travel-inline-toolbar travel-inline-toolbar-right">
-    <button type="button" class="travel-inline-rotate" id="travel-inline-rotate" aria-label="切換地圖方向（南上北下／北上南下）">⟳</button>
+    <button type="button" class="travel-inline-rotate" id="travel-inline-rotate" aria-label="切換地圖方向（南上北下／北上南下）"><span>⟳</span></button>
   </div>
 
   <!-- 出行訣 階段二 2a：方框內嵌地圖。z-index 低於 .grid，透過 .cell 背景透明讓地圖從九宮線縫間透出 -->
@@ -1896,7 +1897,7 @@ function locateInlineTravelPosition(forceZoom) {
   navigator.geolocation.getCurrentPosition(function(position) {
     const latLng = [position.coords.latitude, position.coords.longitude];
     if (inlineTravelPositionMarker) inlineTravelMap.removeLayer(inlineTravelPositionMarker);
-    inlineTravelPositionMarker = L.circleMarker(latLng, { radius: 7, color: '#2471a3', fillColor: '#2471a3', fillOpacity: 1, weight: 2 }).addTo(inlineTravelMap);
+    inlineTravelPositionMarker = L.circleMarker(latLng, { radius: 4, color: '#2471a3', fillColor: '#2471a3', fillOpacity: 1, weight: 1.5 }).addTo(inlineTravelMap);
     if (forceZoom) {
       inlineTravelMap.setView(latLng, 16);
     } else {
