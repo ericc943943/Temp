@@ -870,7 +870,10 @@
   .travel-compass-disc .travel-compass-center { display: none; }
   /* 文字獨立為固定內圈：圓盤放大時不跟著放大，仍維持在圓心附近。 */
   .travel-compass-label-disc { position: absolute; width: min(60vmin, 380px); height: min(60vmin, 380px); flex: 0 0 auto; transition: transform .08s linear; }
-  .travel-compass-sector { fill-opacity: .20; }
+  .travel-compass-sector { fill-opacity: .20; stroke: #fff; stroke-width: 2; }
+  /* 階段三：吉凶標記同步到扇形邊框——金框＝吉、黑框＝凶，沿用階段一 mark-lucky/mark-unlucky 同一組顏色語意 */
+  .travel-compass-sector.mark-lucky   { stroke: #b8860b; stroke-width: 4; }
+  .travel-compass-sector.mark-unlucky { stroke: #333;    stroke-width: 4; }
   .travel-compass-label { font-family: "Noto Serif TC", serif; font-size: 10px; font-weight: 300; text-anchor: middle; dominant-baseline: central; fill: #222; }
   /* 方位字（北/東/南/西...）放大兩倍，宮名／數字／分隔符維持原尺寸不變 */
   .travel-compass-label-dir { font-size: 18px; font-weight: 400; }
@@ -942,7 +945,7 @@
   /* 旋轉鈕獨立一組，置中對齊 2 宮（右欄），跟左欄的返回/盤鈕分開，避免擠在同一排 */
   .travel-inline-toolbar-right { left: 83.333%; }
   .outer.travel-map-mode .travel-inline-toolbar { display: flex; }
-  .travel-inline-exit, .travel-inline-locate, .travel-inline-board-toggle, .travel-inline-rotate {
+  .travel-inline-exit, .travel-inline-locate, .travel-inline-board-toggle, .travel-inline-rotate, .travel-inline-fullscreen {
     width: 30px; height: 30px; border-radius: 50%;
     border: none; background: rgba(255,255,255,.92); color: #333;
     font-size: 15px; display: flex; align-items: center; justify-content: center;
@@ -954,7 +957,10 @@
   .travel-inline-rotate span { display: block; transform: translate(0.5px, 0.5px); } /* ⟳ 字符本身視覺重心偏左上，微調置中 */
   .travel-inline-rotate.active { background: #2471a3; color: #fff; }
   .travel-inline-locate { position: absolute; z-index: 2; bottom: 8px; right: 8px; color: #2471a3; }
-  .travel-inline-exit:active, .travel-inline-locate:active, .travel-inline-board-toggle:active, .travel-inline-rotate:active { opacity: .85; }
+  /* 階段三：全螢幕展開鈕，方框右上角，只在地圖模式（.travel-map-mode）常駐顯示，跟旋轉/盤面狀態無關 */
+  .travel-inline-fullscreen { display: none; position: absolute; z-index: 5; top: -8px; right: -8px; font-size: 13px; }
+  .outer.travel-map-mode .travel-inline-fullscreen { display: flex; }
+  .travel-inline-exit:active, .travel-inline-locate:active, .travel-inline-board-toggle:active, .travel-inline-rotate:active, .travel-inline-fullscreen:active { opacity: .85; }
 
   /* 地圖模式：九宮格線（.cell 邊框）與 r1c1 宮位標籤留在畫面上，其餘內容透明化／隱藏，讓地圖從縫間透出 */
   .outer.travel-map-mode .grid { position: relative; z-index: 1; pointer-events: none; }
@@ -1211,6 +1217,9 @@
   <div class="travel-inline-toolbar travel-inline-toolbar-right">
     <button type="button" class="travel-inline-rotate" id="travel-inline-rotate" aria-label="切換地圖方向（南上北下／北上南下）"><span>⟳</span></button>
   </div>
+
+  <!-- 出行訣 階段三：全螢幕展開鈕，方框右上角，點擊後進入既有的全螢幕扇形羅盤（travel-overlay） -->
+  <button type="button" class="travel-inline-fullscreen" id="travel-inline-fullscreen" aria-label="展開全螢幕羅盤">⛶</button>
 
   <!-- 出行訣 階段二 2a：方框內嵌地圖。z-index 低於 .grid，透過 .cell 背景透明讓地圖從九宮線縫間透出 -->
   <div class="travel-inline-map-wrap" id="travel-inline-map-wrap" style="display:none;">
@@ -1814,6 +1823,20 @@ function cycleTravelMark(house) {
   const cur = travelMarks[house];
   travelMarks[house] = cur === null ? '吉' : (cur === '吉' ? '凶' : null);
   renderTravelMark(house);
+  updateTravelCompassSectorMarks(); // 階段三：同步標記狀態到全螢幕扇形羅盤邊框（即使當下還沒開全螢幕也先同步好）
+}
+
+// 階段三：把 travelMarks 目前狀態套到全螢幕扇形羅盤（travel-compass-disc）的各宮扇形邊框上
+// 金框＝吉、黑框＝凶，未標記維持預設白邊分隔（見 CSS .travel-compass-sector）
+function updateTravelCompassSectorMarks() {
+  TRAVEL_MARK_HOUSES.forEach(h => {
+    const v = travelMarks[h];
+    document.querySelectorAll('.travel-compass-sector[data-house="' + h + '"]').forEach(sector => {
+      sector.classList.remove('mark-lucky', 'mark-unlucky');
+      if (v === '吉') sector.classList.add('mark-lucky');
+      else if (v === '凶') sector.classList.add('mark-unlucky');
+    });
+  });
 }
 
 function enterTravelMarkingMode() {
@@ -2013,6 +2036,7 @@ document.getElementById('travel-inline-exit').addEventListener('click', exitTrav
 document.getElementById('travel-inline-locate').addEventListener('click', function() { recenterInlineTravelPosition(); });
 document.getElementById('travel-inline-board-toggle').addEventListener('click', toggleTravelBoardOverlay);
 document.getElementById('travel-inline-rotate').addEventListener('click', toggleTravelMapRotate);
+document.getElementById('travel-inline-fullscreen').addEventListener('click', openTravelMode); // 階段三：方框地圖 → 全螢幕扇形羅盤
 
 // ── 門迫判定 ──
 // ══════════════════════════════════
@@ -2022,6 +2046,7 @@ let travelMap = null;
 let travelPositionMarker = null;
 let travelCompassEnabled = false;
 let travelBoardPlaceholder = null;
+let travelInlineWrapPrevDisplay = null; // 階段三：記住展開全螢幕前，方框內嵌地圖(travel-inline-map-wrap)原本的 display 值，供關閉全螢幕時還原
 
 function setTravelStatus(message) {
   const statusEl = document.getElementById('travel-status');
@@ -2111,6 +2136,12 @@ function openTravelMode() {
   const boardLayer = document.getElementById('travel-board-layer');
   const board = document.querySelector('#paipan-result .outer');
   if (!overlay || !boardLayer || !board || overlay.classList.contains('is-open')) return;
+  // 階段三：若是從方框地圖模式展開，先暫時隱藏方框內嵌地圖（travel-inline-map-wrap），
+  // 避免跟全螢幕背景地圖疊在一起顯示；記住原本的 display 值，關閉全螢幕時還原
+  const inlineWrap = document.getElementById('travel-inline-map-wrap');
+  travelInlineWrapPrevDisplay = inlineWrap ? inlineWrap.style.display : null;
+  if (inlineWrap) inlineWrap.style.display = 'none';
+  updateTravelCompassSectorMarks(); // 同步吉凶標記到扇形羅盤邊框
   travelBoardPlaceholder = document.createComment('travel-board-placeholder');
   board.parentNode.insertBefore(travelBoardPlaceholder, board);
   boardLayer.appendChild(board);
@@ -2141,6 +2172,15 @@ function closeTravelMode() {
       travelBoardPlaceholder.remove();
       travelBoardPlaceholder = null;
     }
+    // 階段三：還原方框內嵌地圖原本的顯示狀態（若當初是從地圖模式展開全螢幕進來的）
+    const inlineWrap = document.getElementById('travel-inline-map-wrap');
+    if (inlineWrap && travelInlineWrapPrevDisplay !== null) {
+      inlineWrap.style.display = travelInlineWrapPrevDisplay;
+      if (inlineWrap.style.display === '' && inlineTravelMap) {
+        inlineTravelMap.invalidateSize(); // 剛從 display:none 恢復，Leaflet 容器尺寸需要重新量測
+      }
+    }
+    travelInlineWrapPrevDisplay = null;
     overlay.setAttribute('aria-hidden', 'true');
   }, 300);
 }
