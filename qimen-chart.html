@@ -386,7 +386,12 @@
   .dz9-cell.align-right { justify-content: flex-end; }
   .dz9-branch { font-size: 26.7cqi; color: #333; display: inline-block; line-height: 1; white-space: nowrap; }
   .dz9-label { font-size: 26.7cqi; line-height: 1; white-space: nowrap; }
-  .dz-center { display: flex; align-items: center; justify-content: center; font-size: 13px; color: #bbb; width:100%; height:100%; cursor: pointer; }
+  .dz-center { position: relative; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #bbb; width:100%; height:100%; cursor: pointer; }
+  /* 出行訣旋轉：指針左右各一個小箭頭，2026.08 從獨立的⟳按鈕併入中宮指針（見下方 travel-map-mode 顯示規則） */
+  .compass-rotate-arrow { position: absolute; top: 50%; width: 9px; height: 9px; opacity: 0; transition: opacity .2s ease, color .3s ease; pointer-events: none; color: #999; }
+  .compass-rotate-arrow svg { width: 100%; height: 100%; display: block; }
+  .compass-rotate-arrow.left  { left: -4px; transform: translateY(-50%); }
+  .compass-rotate-arrow.right { right: -4px; transform: translateY(-50%) scaleX(-1); } /* 跟左邊鏡像對稱，同一個圖形轉個方向 */
   .compass-ring {
     position: relative;
     width: 100%;
@@ -907,9 +912,10 @@
   .travel-compass-gua.mark-unlucky, .travel-compass-dir.mark-unlucky, .travel-compass-dot.mark-unlucky {
     filter: drop-shadow(0 0 1.5px currentColor) drop-shadow(0 0 4px currentColor);
   }
-  .travel-toolbar { position: absolute; z-index: 4; top: max(12px, env(safe-area-inset-top)); left: 12px; right: 12px; display: flex; justify-content: space-between; gap: 8px; pointer-events: none; }
+  .travel-toolbar { position: absolute; z-index: 4; top: max(12px, env(safe-area-inset-top)); left: 12px; display: flex; gap: 8px; pointer-events: none; }
   .travel-toolbar button, .travel-status { pointer-events: auto; border: none; border-radius: 18px; padding: 9px 13px; color: #333; background: rgba(255,255,255,.94); font: 13px "M PLUS Rounded 1c", sans-serif; }
-  .travel-status { max-width: 68%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* 狀態文字獨立於工具列之外，置中置頂顯示，不受返回鈕位置影響 */
+  .travel-status { position: absolute; z-index: 4; top: max(12px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); max-width: min(58vw, 240px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .travel-size-control { position: absolute; z-index: 4; right: 12px; bottom: max(18px, env(safe-area-inset-bottom)); width: min(220px, calc(100vw - 24px)); border-radius: 14px; padding: 9px 12px; background: rgba(255,255,255,.94); color: #333; font: 12px "M PLUS Rounded 1c", sans-serif; pointer-events: auto; }
   .travel-size-control label { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
   .travel-size-control input { display: block; width: 100%; margin: 7px 0 0; accent-color: #555; }
@@ -976,10 +982,8 @@
     position: absolute; z-index: 5; top: -32px; left: 16.667%; transform: translateX(-50%);
     justify-content: center; gap: 10px;
   }
-  /* 旋轉鈕獨立一組，置中對齊 2 宮（右欄），跟左欄的返回/盤鈕分開，避免擠在同一排 */
-  .travel-inline-toolbar-right { left: 83.333%; }
   .outer.travel-map-mode .travel-inline-toolbar { display: flex; }
-  .travel-inline-exit, .travel-inline-locate, .travel-inline-board-toggle, .travel-inline-rotate, .travel-inline-fullscreen {
+  .travel-inline-exit, .travel-inline-locate, .travel-inline-board-toggle, .travel-inline-fullscreen {
     width: 30px; height: 30px; border-radius: 50%;
     border: none; background: rgba(255,255,255,.92); color: #333;
     font-size: 15px; display: flex; align-items: center; justify-content: center;
@@ -987,14 +991,11 @@
   }
   .travel-inline-board-toggle { font-size: 12px; }
   .travel-inline-board-toggle.active { background: #2471a3; color: #fff; }
-  .travel-inline-rotate { font-size: 24px; line-height: 1; }
-  .travel-inline-rotate span { display: block; transform: translate(0.5px, 0.5px); } /* ⟳ 字符本身視覺重心偏左上，微調置中 */
-  .travel-inline-rotate.active { background: #2471a3; color: #fff; }
   .travel-inline-locate { position: absolute; z-index: 2; bottom: 8px; right: 8px; color: #2471a3; }
   /* 階段三：全螢幕展開鈕，方框右上角，只在地圖模式（.travel-map-mode）常駐顯示，跟旋轉/盤面狀態無關 */
   .travel-inline-fullscreen { display: none; position: absolute; z-index: 5; top: -8px; right: -8px; font-size: 13px; }
   .outer.travel-map-mode .travel-inline-fullscreen { display: flex; }
-  .travel-inline-exit:active, .travel-inline-locate:active, .travel-inline-board-toggle:active, .travel-inline-rotate:active, .travel-inline-fullscreen:active { opacity: .85; }
+  .travel-inline-exit:active, .travel-inline-locate:active, .travel-inline-board-toggle:active, .travel-inline-fullscreen:active { opacity: .85; }
 
   /* 地圖模式：九宮格線（.cell 邊框）與 r1c1 宮位標籤留在畫面上，其餘內容透明化／隱藏，讓地圖從縫間透出 */
   .outer.travel-map-mode .grid { position: relative; z-index: 1; pointer-events: none; }
@@ -1031,10 +1032,17 @@
     background: rgba(255,255,255,.74); border-radius: 0 0 8px 0;
   }
   /* 指針(.dz-center)在地圖模式下維持顯示，讓使用者知道上方離9是南、下方坎1是北（跟九宮方位對照），
-     跟地圖是疊在一起的兩層投影片：指針固定跟九宮同步，不跟即時裝置朝向連動，只有點旋轉鈕時才一起翻轉
+     跟地圖是疊在一起的兩層投影片：指針固定跟九宮同步，不跟即時裝置朝向連動，只有點中宮（＝旋轉）時才一起翻轉
      （見 JS setTravelCompassOrientation／travelCompassFrozen）。藍點（目前位置）另外保留，兩者並存。
      過渡時間拉長跟地圖的 0.5s 同步，翻轉手感一致。 */
   .outer.travel-map-mode .compass-ring { transition: transform .5s ease; }
+  /* 旋轉箭頭：只在方框內嵌地圖模式顯示（不含全螢幕扇形羅盤，見需求）；
+     用 #paipan-result 限定原始位置，出行訣全螢幕會把 .outer 節點暫時搬進 #travel-board-layer，
+     搬過去後這條規則自然不再命中，順便讓中宮在全螢幕快照期間維持不可點擊，不需要另外加 JS 判斷 */
+  #paipan-result .outer.travel-map-mode .compass-rotate-arrow { opacity: .8; }
+  #paipan-result .outer.travel-map-mode.travel-map-rotated .compass-rotate-arrow { color: #2471a3; }
+  /* 中宮點擊：地圖模式下 .grid 整體 pointer-events:none（見上方規則），這裡單獨救回中宮指針，讓點擊可以觸發旋轉 */
+  #paipan-result .outer.travel-map-mode .dz-center { pointer-events: auto; }
 
   /* 盤面顯示/隱藏：點右上角「盤」鈕切換，半透明疊加在地圖上方，固定在同一塊九宮框內，不出框 */
   .outer.travel-map-mode.board-visible .cell {
@@ -1249,11 +1257,6 @@
     <button type="button" class="travel-inline-exit" id="travel-inline-exit" aria-label="返回盤面">←</button>
     <button type="button" class="travel-inline-board-toggle" id="travel-inline-board-toggle" aria-label="顯示/隱藏盤面">盤</button>
   </div>
-  <!-- 2b：旋轉鈕獨立置於 2 宮正上方，跟左側那組分開 -->
-  <div class="travel-inline-toolbar travel-inline-toolbar-right">
-    <button type="button" class="travel-inline-rotate" id="travel-inline-rotate" aria-label="切換地圖方向（南上北下／北上南下）"><span>⟳</span></button>
-  </div>
-
   <!-- 出行訣 階段三：全螢幕展開鈕，方框右上角，點擊後進入既有的全螢幕扇形羅盤（travel-overlay） -->
   <button type="button" class="travel-inline-fullscreen" id="travel-inline-fullscreen" aria-label="展開全螢幕羅盤">⛶</button>
 
@@ -1365,6 +1368,9 @@
         <div class="needle-half needle-s">S</div>
         <div class="needle-half needle-n">N</div>
       </div></div>
+      <!-- 出行訣旋轉：2026.08 併入指針左右，只在方框內嵌地圖模式顯示（見 CSS #paipan-result .outer.travel-map-mode .compass-rotate-arrow），點整個中宮即可觸發 -->
+      <span class="compass-rotate-arrow left" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 1 2.6 5.9"/><path d="M4 17v-5h5"/></svg></span>
+      <span class="compass-rotate-arrow right" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 1 2.6 5.9"/><path d="M4 17v-5h5"/></svg></span>
       <span id="daxian-5" class="gc-daxian mingpan-label" style="display:none;"></span>
     </div></div>
     <div id="g5r2c3" class="gc gc-center" style="grid-column:3;grid-row:2;"><div class="dz9">
@@ -1513,7 +1519,8 @@
       <circle class="travel-compass-center" cx="100" cy="100" r="3" fill="rgba(255,255,255,.9)"/>
     </svg>
   </div>
-  <div class="travel-toolbar"><button type="button" onclick="closeTravelMode()">← 返回盤面</button><div class="travel-status" id="travel-status">載入地圖與定位中…</div></div>
+  <div class="travel-toolbar"><button type="button" onclick="closeTravelMode()">← 返回盤面</button></div>
+  <div class="travel-status" id="travel-status">載入地圖與定位中…</div>
   <button type="button" class="travel-anchor-toggle" id="travel-anchor-toggle" onclick="toggleTravelAnchor()" aria-label="錨定圓心於地圖座標" title="錨定圓心於地圖座標">⚓</button>
   <div class="travel-size-control"><label for="travel-size-range">羅盤大小 <span id="travel-size-value">88%</span></label><input id="travel-size-range" type="range" min="45" max="500" value="88" aria-label="調整羅盤大小"></div>
   <div class="travel-orientation-card" id="travel-orientation-card"><span>啟用羅盤，讓方位圖跟著手機朝向轉動</span><button type="button" id="travel-orientation-btn">啟用</button></div>
@@ -1887,6 +1894,13 @@ function captureChart() {
   compassCell.addEventListener('click', function() {
     // 羅盤已啟用 → 這次點擊不是要開權限，而是詢問是否進入出行訣吉凶標記模式
     if (compassActive) {
+      // 已經在方框內嵌地圖模式中：點中宮＝旋轉（2026.08 併入指針，取代原本獨立的⟳按鈕）；
+      // pointer-events 只在 #paipan-result 底下的原始位置開放（見 CSS），搬進全螢幕快照層後這裡不會被觸發，不需另外判斷
+      const outerEl = document.getElementById('outer-board');
+      if (outerEl && outerEl.classList.contains('travel-map-mode')) {
+        toggleTravelMapRotate();
+        return;
+      }
       if (typeof travelMarkingActive !== 'undefined' && travelMarkingActive) return; // 標記中不重複詢問
       // 出行訣開放給所有陽盤（時/日/月/年家皆可）；僅陰盤、命盤不適用；兩者都永遠不會進出行訣，直接不反應，不跳提示
       if (typeof PLATE_MODE === 'undefined' || PLATE_MODE !== 'yang' || (typeof MING_PAN_MODE !== 'undefined' && MING_PAN_MODE)) {
@@ -2182,11 +2196,9 @@ function swapTravelHousePair(a, b) {
 
 function toggleTravelMapRotate() {
   const outer = document.getElementById('outer-board');
-  const btn = document.getElementById('travel-inline-rotate');
   if (!outer) return;
   travelMapRotated = !travelMapRotated;
   outer.classList.toggle('travel-map-rotated', travelMapRotated);
-  if (btn) btn.classList.toggle('active', travelMapRotated);
   // 轉正（北上南下）後拖曳方向判讀不再反向，開放拖曳；轉回預設南上北下時關閉，理由同容器旋轉的原始限制
   if (inlineTravelMap && inlineTravelMap.dragging) {
     if (travelMapRotated) inlineTravelMap.dragging.enable();
@@ -2204,7 +2216,6 @@ function toggleTravelMapRotate() {
 document.getElementById('travel-inline-exit').addEventListener('click', exitTravelMapMode);
 document.getElementById('travel-inline-locate').addEventListener('click', function() { recenterInlineTravelPosition(); });
 document.getElementById('travel-inline-board-toggle').addEventListener('click', toggleTravelBoardOverlay);
-document.getElementById('travel-inline-rotate').addEventListener('click', toggleTravelMapRotate);
 document.getElementById('travel-inline-fullscreen').addEventListener('click', openTravelMode); // 階段三：方框地圖 → 全螢幕扇形羅盤
 
 // ── 門迫判定 ──
