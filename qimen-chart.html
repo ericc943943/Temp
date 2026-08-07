@@ -315,6 +315,16 @@
   .gc-daxian .dx-num { position: absolute; left: 50%; top: 0; transform: translateX(-50%); }
   .gc-daxian .dx-suffix { position: absolute; left: 50%; top: 3px; transform: translateX(8px); font-size: 8px; }
 
+  /* 出行訣：吉凶標記（借用 c1r2／gc-left2 這格，跟命盤大限互斥顯示，見 enterTravelMarkingMode） */
+  .gc-left2.travel-marking-active { cursor: pointer; }
+  .travel-mark-label {
+    display: none;
+    font-size: 13px; font-weight: bold;
+    font-family: "M PLUS Rounded 1c", sans-serif;
+  }
+  .travel-mark-label.mark-lucky   { color: #b8860b; }
+  .travel-mark-label.mark-unlucky { color: #333; }
+
   /* ── 左下（馬）── */
   .gc-horse {
     display: flex; flex-direction: row;
@@ -842,7 +852,6 @@
      出行羅盤模式：地圖、方位盤與既有方盤各自渲染，以淡出／淡入製造方變圓的過渡。
      吉方選取規則尚待確認；此版僅建立可接收宮位選取狀態的羅盤層。
   ══════════════════════════════════ */
-  .travel-toggle { margin-left: 8px; }
   .travel-overlay { position: fixed; inset: 0; z-index: 5000; visibility: hidden; opacity: 0; transition: opacity .26s ease, visibility 0s linear .26s; background: #f7f7f7; }
   .travel-overlay.is-open { visibility: visible; opacity: 1; transition: opacity .26s ease; }
   /* Leaflet 內部 pane 的 z-index 很高；此層必須建立自己的堆疊環境，不能覆蓋羅盤。 */
@@ -878,6 +887,43 @@
   /* 回到目前位置按鈕：仿 Google Map 那種圓形箭頭浮動按鈕，放左下角避開右側的羅盤大小面板 */
   .travel-locate-btn { position: absolute; z-index: 4; left: 12px; bottom: max(18px, env(safe-area-inset-bottom)); width: 44px; height: 44px; border-radius: 50%; border: none; background: rgba(255,255,255,.94); color: #2471a3; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,.18); pointer-events: auto; }
   .travel-locate-btn:active { background: #eee; }
+
+  /* ══════════════════════════════════
+     出行訣 階段一：吉凶標記模式的詢問面板／頂部提示列（皆為面板內展開的確認 UI，不使用原生 confirm()）
+  ══════════════════════════════════ */
+  .travel-ask-panel {
+    position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%);
+    z-index: 6000; visibility: hidden; opacity: 0;
+    background: #fff; border-radius: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.25);
+    padding: 18px 20px; width: min(260px, calc(100vw - 40px)); text-align: center;
+    font-family: "M PLUS Rounded 1c", sans-serif;
+    transition: opacity .18s ease, visibility 0s linear .18s;
+  }
+  .travel-ask-panel.is-open { visibility: visible; opacity: 1; transition: opacity .18s ease; }
+  .travel-ask-panel p { margin: 0 0 14px; font-size: 14px; color: #333; line-height: 1.5; }
+  .travel-ask-actions { display: flex; gap: 8px; }
+  .travel-ask-actions button {
+    flex: 1; padding: 9px 0; border: none; border-radius: 7px;
+    font-size: 13px; font-weight: bold; cursor: pointer; font-family: inherit;
+  }
+  .travel-ask-yes { background: #2471a3; color: #fff; }
+  .travel-ask-no  { background: #eee; color: #555; }
+
+  .travel-marking-banner {
+    position: fixed; left: 50%; top: max(12px, env(safe-area-inset-top)); transform: translateX(-50%);
+    z-index: 6000; display: none; align-items: center; gap: 10px;
+    background: rgba(255,255,255,.97); border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.2);
+    padding: 9px 12px; max-width: 92vw;
+    font-family: "M PLUS Rounded 1c", sans-serif; font-size: 12px; color: #555;
+  }
+  .travel-marking-banner.is-open { display: flex; }
+  .travel-marking-banner span { white-space: nowrap; }
+  .travel-marking-banner button {
+    border: none; border-radius: 7px; padding: 7px 11px; font-size: 13px;
+    font-weight: bold; cursor: pointer; font-family: inherit; flex-shrink: 0;
+  }
+  .travel-marking-confirm { background: #2e7d32; color: #fff; }
+  .travel-marking-cancel  { background: #eee; color: #555; }
 </style>
 </head>
 <body>
@@ -885,7 +931,6 @@
 <!-- 標題 -->
 <div class="title-row">
   <div class="title-row-text">奇門遁甲九宮排盤</div>
-  <button class="btn-records travel-toggle" type="button" onclick="openTravelMode()">出行羅盤</button>
   <button class="btn-records" onclick="openRecordsPanel()">紀錄</button>
 </div>
 
@@ -1078,7 +1123,7 @@
     <div id="g4r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#4caf50;">4</span><span class="house-name" style="color:#4caf50;">巽</span></div><div class="bagua" style="--line-color:#4caf50;"><div class="bline-full"></div><div class="bline-full"></div><div class="bline-broken"><span></span><span></span></div></div></div>
     <div id="g4r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-4"></span></div>
     <div id="g4r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-4"></div></div>
-    <div id="g4r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-4" class="gc-daxian mingpan-label" style="display:none;"></span></div>
+    <div id="g4r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-4" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-4" class="travel-mark-label"></span></div>
     <div id="g4r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-4"></span></div>
     <div id="g4r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-4"></span></div>
     <div id="g4r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-4"></div></div>
@@ -1091,7 +1136,7 @@
     <div id="g9r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#c0392b;">9</span><span class="house-name" style="color:#c0392b;">離</span></div><div class="bagua" style="--line-color:#c0392b;"><div class="bline-full"></div><div class="bline-broken"><span></span><span></span></div><div class="bline-full"></div></div></div>
     <div id="g9r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-9"></span></div>
     <div id="g9r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-9"></div></div>
-    <div id="g9r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-9" class="gc-daxian mingpan-label" style="display:none;"></span></div>
+    <div id="g9r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-9" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-9" class="travel-mark-label"></span></div>
     <div id="g9r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-9"></span></div>
     <div id="g9r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-9"></span></div>
     <div id="g9r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-9"></div></div>
@@ -1104,7 +1149,7 @@
     <div id="g2r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#a0714f;">2</span><span class="house-name" style="color:#a0714f;">坤</span></div><div class="bagua" style="--line-color:#a0714f;"><div class="bline-broken"><span></span><span></span></div><div class="bline-broken"><span></span><span></span></div><div class="bline-broken"><span></span><span></span></div></div></div>
     <div id="g2r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-2"></span></div>
     <div id="g2r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-2"></div></div>
-    <div id="g2r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-2" class="gc-daxian mingpan-label" style="display:none;"></span></div>
+    <div id="g2r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-2" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-2" class="travel-mark-label"></span></div>
     <div id="g2r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-2"></span></div>
     <div id="g2r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-2"></span></div>
     <div id="g2r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-2"></div></div>
@@ -1117,7 +1162,7 @@
     <div id="g3r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#1a7a1a;">3</span><span class="house-name" style="color:#1a7a1a;">震</span></div><div class="bagua" style="--line-color:#1a7a1a;"><div class="bline-broken"><span></span><span></span></div><div class="bline-broken"><span></span><span></span></div><div class="bline-full"></div></div></div>
     <div id="g3r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-3"></span></div>
     <div id="g3r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-3"></div></div>
-    <div id="g3r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-3" class="gc-daxian mingpan-label" style="display:none;"></span></div>
+    <div id="g3r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-3" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-3" class="travel-mark-label"></span></div>
     <div id="g3r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-3"></span></div>
     <div id="g3r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-3"></span></div>
     <div id="g3r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-3"></div></div>
@@ -1181,7 +1226,7 @@
     <div id="g7r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#999999;">7</span><span class="house-name" style="color:#999999;">兌</span></div><div class="bagua" style="--line-color:#999999;"><div class="bline-broken"><span></span><span></span></div><div class="bline-full"></div><div class="bline-full"></div></div></div>
     <div id="g7r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-7"></span></div>
     <div id="g7r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-7"></div></div>
-    <div id="g7r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-7" class="gc-daxian mingpan-label" style="display:none;"></span></div>
+    <div id="g7r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-7" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-7" class="travel-mark-label"></span></div>
     <div id="g7r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-7"></span></div>
     <div id="g7r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-7"></span></div>
     <div id="g7r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-7"></div></div>
@@ -1194,7 +1239,7 @@
     <div id="g8r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#6b4423;">8</span><span class="house-name" style="color:#6b4423;">艮</span></div><div class="bagua" style="--line-color:#6b4423;"><div class="bline-full"></div><div class="bline-broken"><span></span><span></span></div><div class="bline-broken"><span></span><span></span></div></div></div>
     <div id="g8r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-8"></span></div>
     <div id="g8r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-8"></div></div>
-    <div id="g8r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-8" class="gc-daxian mingpan-label" style="display:none;"></span></div>
+    <div id="g8r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-8" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-8" class="travel-mark-label"></span></div>
     <div id="g8r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-8"></span></div>
     <div id="g8r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-8"></span></div>
     <div id="g8r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-8"></div></div>
@@ -1207,7 +1252,7 @@
     <div id="g1r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#2471a3;">1</span><span class="house-name" style="color:#2471a3;">坎</span></div><div class="bagua" style="--line-color:#2471a3;"><div class="bline-broken"><span></span><span></span></div><div class="bline-full"></div><div class="bline-broken"><span></span><span></span></div></div></div>
     <div id="g1r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-1"></span></div>
     <div id="g1r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-1"></div></div>
-    <div id="g1r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-1" class="gc-daxian mingpan-label" style="display:none;"></span></div>
+    <div id="g1r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-1" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-1" class="travel-mark-label"></span></div>
     <div id="g1r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-1"></span></div>
     <div id="g1r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-1"></span></div>
     <div id="g1r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-1"></div></div>
@@ -1220,7 +1265,7 @@
     <div id="g6r1c1" class="gc gc-left" style="grid-column:1;grid-row:1;"><div class="house-id"><span class="house-num" style="color:#555555;">6</span><span class="house-name" style="color:#555555;">乾</span></div><div class="bagua" style="--line-color:#555555;"><div class="bline-full"></div><div class="bline-full"></div><div class="bline-full"></div></div></div>
     <div id="g6r1c2" class="gc gc-shen" style="grid-column:2;grid-row:1;"><span id="sh-6"></span></div>
     <div id="g6r1c3" class="gc gc-void" style="grid-column:3;grid-row:1;"><div id="void-6"></div></div>
-    <div id="g6r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-6" class="gc-daxian mingpan-label" style="display:none;"></span></div>
+    <div id="g6r2c1" class="gc gc-left2" style="grid-column:1;grid-row:2;"><span id="daxian-6" class="gc-daxian mingpan-label" style="display:none;"></span><span id="travel-mark-6" class="travel-mark-label"></span></div>
     <div id="g6r2c2" class="gc gc-star" style="grid-column:2;grid-row:2;"><span id="star-6"></span></div>
     <div id="g6r2c3" class="gc gc-tian" style="grid-column:3;grid-row:2;"><span id="tian-6"></span></div>
     <div id="g6r3c1" class="gc gc-horse" style="grid-column:1;grid-row:3;"><div id="horse-6"></div></div>
@@ -1273,6 +1318,22 @@
   <button type="button" class="travel-locate-btn" aria-label="回到目前位置" onclick="recenterTravelPosition()">
     <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2 L19 21 L12 17 L5 21 Z"/></svg>
   </button>
+</div>
+
+<!-- 出行訣 階段一：詢問是否進入吉凶標記模式（羅盤已啟用時再次點擊中宮觸發） -->
+<div class="travel-ask-panel" id="travel-ask-panel">
+  <p>是否載入出行訣圖資？<br>載入前可先標記八宮吉凶。</p>
+  <div class="travel-ask-actions">
+    <button type="button" class="travel-ask-no"  onclick="confirmTravelAsk(false)">否</button>
+    <button type="button" class="travel-ask-yes" onclick="confirmTravelAsk(true)">是</button>
+  </div>
+</div>
+
+<!-- 出行訣 階段一：標記模式頂部提示列 -->
+<div class="travel-marking-banner" id="travel-marking-banner">
+  <span>點各宮左中格切換吉凶</span>
+  <button type="button" class="travel-marking-cancel"  onclick="cancelTravelMarking()">✕ 取消</button>
+  <button type="button" class="travel-marking-confirm" onclick="confirmTravelMarking()">✓ 確認</button>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1359,6 +1420,10 @@ function applyPlateMode(mode) {
   document.getElementById('plate-yin-row').style.display = (mode === 'yin' && !MING_PAN_MODE) ? 'flex' : 'none';
   document.getElementById('plate-subtoggle').style.display = (mode === 'yang' && !MING_PAN_MODE) ? 'flex' : 'none';
   updateQuickNav();
+  // 出行訣僅限陽盤・時家；切走時若標記模式還開著，自動退出標記 UI（travelMarks 資料保留，只是畫面收起）
+  if (typeof travelMarkingActive !== 'undefined' && travelMarkingActive && (mode !== 'yang' || (typeof PLATE_SUBMODE !== 'undefined' && PLATE_SUBMODE !== 'time'))) {
+    exitTravelMarkingModeUI();
+  }
 }
 function setPlateMode(mode) {
   if (MING_PAN_MODE) {
@@ -1380,6 +1445,10 @@ function applyYangSubMode(sub) {
     document.getElementById('plate-yang-' + s).classList.toggle('active', sub === s);
   });
   updateQuickNav();
+  // 出行訣僅限時家；切到日/月/年家時，若標記模式還開著，自動退出標記 UI
+  if (typeof travelMarkingActive !== 'undefined' && travelMarkingActive && sub !== 'time') {
+    exitTravelMarkingModeUI();
+  }
 }
 function setYangSubMode(sub) {
   if (MING_PAN_MODE) exitMingPanMode();
@@ -1573,6 +1642,17 @@ function captureChart() {
   }
 
   compassCell.addEventListener('click', function() {
+    // 羅盤已啟用 → 這次點擊不是要開權限，而是詢問是否進入出行訣吉凶標記模式
+    if (compassActive) {
+      if (typeof travelMarkingActive !== 'undefined' && travelMarkingActive) return; // 標記中不重複詢問
+      // 出行訣僅限陽盤・時家（PLATE_SUBMODE==='time'）；陰盤、日/月/年盤皆不開放，見開發討論
+      if (typeof PLATE_MODE === 'undefined' || PLATE_MODE !== 'yang' || PLATE_SUBMODE !== 'time') {
+        alert('出行訣目前僅支援陽盤・時家，請先切換盤別。');
+        return;
+      }
+      showTravelAskPanel();
+      return;
+    }
     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
       DeviceOrientationEvent.requestPermission().then(function(state) {
         if (state === 'granted') {
@@ -1591,6 +1671,97 @@ function captureChart() {
     }
   });
 })();
+
+// ══════════════════════════════════
+// 出行訣 階段一：吉凶標記模式（不含地圖，純 UI；地圖載入是階段二的工作）
+// 觸發鏈：羅盤已啟用 → 中5宮再次點擊 → 詢問是否載入出行訣圖資 → 是 → 進入標記模式
+// ══════════════════════════════════
+const TRAVEL_MARK_HOUSES = [1,2,3,4,6,7,8,9];
+let travelMarks = {}; // { house: '吉' | '凶' | null }，null＝未標記
+TRAVEL_MARK_HOUSES.forEach(h => { travelMarks[h] = null; });
+let travelMarkingActive = false;
+
+function showTravelAskPanel() {
+  document.getElementById('travel-ask-panel').classList.add('is-open');
+}
+function hideTravelAskPanel() {
+  document.getElementById('travel-ask-panel').classList.remove('is-open');
+}
+function confirmTravelAsk(yes) {
+  hideTravelAskPanel();
+  if (yes) enterTravelMarkingMode();
+}
+
+function renderTravelMark(house) {
+  const el = document.getElementById('travel-mark-' + house);
+  if (!el) return;
+  const v = travelMarks[house];
+  el.textContent = v || '';
+  el.classList.remove('mark-lucky', 'mark-unlucky');
+  if (v === '吉') el.classList.add('mark-lucky');
+  if (v === '凶') el.classList.add('mark-unlucky');
+}
+
+// 三態循環：未標記 → 吉 → 凶 → 未標記，手感同天盤天干點擊十二長生
+function cycleTravelMark(house) {
+  const cur = travelMarks[house];
+  travelMarks[house] = cur === null ? '吉' : (cur === '吉' ? '凶' : null);
+  renderTravelMark(house);
+}
+
+function enterTravelMarkingMode() {
+  if (travelMarkingActive) return;
+  // c1r2 這格命盤模式下顯示大限，跟出行標記共用同一格、會互相蓋住，兩者互斥；
+  // 命盤開著時先關閉命盤，還原成進入命盤前的模式，避免畫面衝突
+  if (typeof MING_PAN_MODE !== 'undefined' && MING_PAN_MODE) {
+    exitMingPanMode();
+    applyPlateMode(_prevPlateMode);
+    if (_prevPlateMode === 'yang') applyYangSubMode(_prevPlateSubmode);
+  }
+  travelMarkingActive = true;
+  TRAVEL_MARK_HOUSES.forEach(h => {
+    const markEl = document.getElementById('travel-mark-' + h);
+    if (markEl) markEl.style.display = '';
+    const cell = document.getElementById('g' + h + 'r2c1');
+    if (cell) cell.classList.add('travel-marking-active');
+    renderTravelMark(h);
+  });
+  document.getElementById('travel-marking-banner').classList.add('is-open');
+}
+
+function exitTravelMarkingModeUI() {
+  travelMarkingActive = false;
+  TRAVEL_MARK_HOUSES.forEach(h => {
+    const markEl = document.getElementById('travel-mark-' + h);
+    if (markEl) markEl.style.display = 'none';
+    const cell = document.getElementById('g' + h + 'r2c1');
+    if (cell) cell.classList.remove('travel-marking-active');
+  });
+  document.getElementById('travel-marking-banner').classList.remove('is-open');
+}
+
+// 取消：退出標記模式的畫面，但保留目前已選的 travelMarks 資料，下次再開仍在
+function cancelTravelMarking() {
+  if (!travelMarkingActive) return;
+  exitTravelMarkingModeUI();
+}
+
+// 確認：階段一收尾在這裡，travelMarks 已備妥，階段二（地圖載入）會接手讀取這份資料
+function confirmTravelMarking() {
+  if (!travelMarkingActive) return;
+  exitTravelMarkingModeUI();
+  console.log('出行訣吉凶標記已確認：', travelMarks);
+}
+
+TRAVEL_MARK_HOUSES.forEach(h => {
+  const cell = document.getElementById('g' + h + 'r2c1');
+  if (cell) {
+    cell.addEventListener('click', function() {
+      if (!travelMarkingActive) return;
+      cycleTravelMark(h);
+    });
+  }
+});
 
 // ── 門迫判定 ──
 // ══════════════════════════════════
