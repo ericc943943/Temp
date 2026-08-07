@@ -930,15 +930,19 @@
      .outer 本身固定在原九宮框範圍內；地圖填滿整個 .outer，九宮格線／r1c1標籤疊在地圖之上。
   ══════════════════════════════════ */
   .travel-inline-map-wrap { position: absolute; inset: 0; z-index: 0; border-radius: 12px; overflow: hidden; }
-  .travel-inline-map { position: absolute; inset: 0; transform: rotate(180deg); /* 預設南上北下，配合盤面慣例；旋轉按鈕（2b）會轉回北上南下 */ }
+  .travel-inline-map { position: absolute; inset: 0; transform: rotate(180deg); transition: transform .5s ease; /* 預設南上北下，配合盤面慣例；旋轉按鈕（2b）平滑轉為北上南下 */ }
+  /* 2b 旋轉狀態：地圖轉正（北上南下）。宮位內容對調（4↔6、9↔1、2↔8、7↔3）由 JS 直接搬動 DOM 節點完成，不靠 CSS。 */
+  .outer.travel-map-mode.travel-map-rotated .travel-inline-map { transform: rotate(0deg); }
   /* 工具列放在方框外、正上方（原引干 yigan-top 佔用的空間），不疊在地圖上擋視線；預設隱藏，僅地圖模式顯示 */
   .travel-inline-toolbar {
     display: none;
     position: absolute; z-index: 5; top: -32px; left: 16.667%; transform: translateX(-50%);
     justify-content: center; gap: 10px;
   }
+  /* 旋轉鈕獨立一組，置中對齊 2 宮（右欄），跟左欄的返回/盤鈕分開，避免擠在同一排 */
+  .travel-inline-toolbar-right { left: 83.333%; }
   .outer.travel-map-mode .travel-inline-toolbar { display: flex; }
-  .travel-inline-exit, .travel-inline-locate, .travel-inline-board-toggle {
+  .travel-inline-exit, .travel-inline-locate, .travel-inline-board-toggle, .travel-inline-rotate {
     width: 30px; height: 30px; border-radius: 50%;
     border: none; background: rgba(255,255,255,.92); color: #333;
     font-size: 15px; display: flex; align-items: center; justify-content: center;
@@ -946,8 +950,9 @@
   }
   .travel-inline-board-toggle { font-size: 12px; }
   .travel-inline-board-toggle.active { background: #2471a3; color: #fff; }
+  .travel-inline-rotate.active { background: #2471a3; color: #fff; }
   .travel-inline-locate { position: absolute; z-index: 2; bottom: 8px; right: 8px; color: #2471a3; }
-  .travel-inline-exit:active, .travel-inline-locate:active, .travel-inline-board-toggle:active { opacity: .85; }
+  .travel-inline-exit:active, .travel-inline-locate:active, .travel-inline-board-toggle:active, .travel-inline-rotate:active { opacity: .85; }
 
   /* 地圖模式：九宮格線（.cell 邊框）與 r1c1 宮位標籤留在畫面上，其餘內容透明化／隱藏，讓地圖從縫間透出 */
   .outer.travel-map-mode .grid { position: relative; z-index: 1; pointer-events: none; }
@@ -1196,6 +1201,10 @@
   <div class="travel-inline-toolbar">
     <button type="button" class="travel-inline-exit" id="travel-inline-exit" aria-label="返回盤面">←</button>
     <button type="button" class="travel-inline-board-toggle" id="travel-inline-board-toggle" aria-label="顯示/隱藏盤面">盤</button>
+  </div>
+  <!-- 2b：旋轉鈕獨立置於 2 宮正上方，跟左側那組分開 -->
+  <div class="travel-inline-toolbar travel-inline-toolbar-right">
+    <button type="button" class="travel-inline-rotate" id="travel-inline-rotate" aria-label="切換地圖方向（南上北下／北上南下）">⟳</button>
   </div>
 
   <!-- 出行訣 階段二 2a：方框內嵌地圖。z-index 低於 .grid，透過 .cell 背景透明讓地圖從九宮線縫間透出 -->
@@ -1915,6 +1924,7 @@ function exitTravelMapMode() {
   const outer = document.getElementById('outer-board');
   const wrap = document.getElementById('travel-inline-map-wrap');
   if (!outer || !wrap) return;
+  if (travelMapRotated) toggleTravelMapRotate(); // 復原宮位順序與地圖朝向，下次進入維持預設南上北下
   outer.classList.remove('travel-map-mode');
   outer.classList.remove('board-visible');
   document.getElementById('travel-inline-board-toggle').classList.remove('active');
@@ -1929,9 +1939,52 @@ function toggleTravelBoardOverlay() {
   if (btn) btn.classList.toggle('active', isVisible);
 }
 
+// ── 2b：旋轉鈕。地圖轉正（北上南下）＋宮位內容對調同步發生 ──
+// 對調用「搬動實際 DOM 節點」而非純 CSS，理由：.grid 是隱式九宮格（DOM順序即畫面位置），
+// 且外框線（.cell:nth-child(1/3/7/9) 的 border）也是靠 DOM 順序判斷，若只用 CSS order 視覺上會位移
+// 但 nth-child 判斷的框線不會跟著動，造成外框線跟內容對不齊。搬動 DOM 節點兩者會同步正確。
+let travelMapRotated = false;
+
+function swapDomNodes(nodeA, nodeB) {
+  if (!nodeA || !nodeB || nodeA === nodeB) return;
+  const parentA = nodeA.parentNode, parentB = nodeB.parentNode;
+  if (!parentA || !parentB) return;
+  const markerA = document.createTextNode('');
+  const markerB = document.createTextNode('');
+  parentA.insertBefore(markerA, nodeA);
+  parentB.insertBefore(markerB, nodeB);
+  parentA.insertBefore(nodeB, markerA);
+  parentB.insertBefore(nodeA, markerB);
+  markerA.remove();
+  markerB.remove();
+}
+
+function swapTravelHousePair(a, b) {
+  const grid = document.querySelector('#outer-board .grid');
+  if (!grid) return;
+  const cellA = grid.querySelector('.cell[data-gong="' + a + '"]');
+  const cellB = grid.querySelector('.cell[data-gong="' + b + '"]');
+  swapDomNodes(cellA, cellB);
+}
+
+function toggleTravelMapRotate() {
+  const outer = document.getElementById('outer-board');
+  const btn = document.getElementById('travel-inline-rotate');
+  if (!outer) return;
+  travelMapRotated = !travelMapRotated;
+  outer.classList.toggle('travel-map-rotated', travelMapRotated);
+  if (btn) btn.classList.toggle('active', travelMapRotated);
+  // 180度旋轉＝對角互換；同一組配對再點一次即復原（toggle 天然可逆，不需另存原始順序）
+  swapTravelHousePair(4, 6);
+  swapTravelHousePair(9, 1);
+  swapTravelHousePair(2, 8);
+  swapTravelHousePair(7, 3);
+}
+
 document.getElementById('travel-inline-exit').addEventListener('click', exitTravelMapMode);
 document.getElementById('travel-inline-locate').addEventListener('click', function() { recenterInlineTravelPosition(); });
 document.getElementById('travel-inline-board-toggle').addEventListener('click', toggleTravelBoardOverlay);
+document.getElementById('travel-inline-rotate').addEventListener('click', toggleTravelMapRotate);
 
 // ── 門迫判定 ──
 // ══════════════════════════════════
