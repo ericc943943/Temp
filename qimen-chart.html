@@ -884,10 +884,10 @@
   .travel-compass-disc .travel-compass-center { display: none; }
   /* 文字獨立為固定內圈：圓盤放大時不跟著放大，仍維持在圓心附近。 */
   .travel-compass-label-disc { position: absolute; width: min(60vmin, 380px); height: min(60vmin, 380px); flex: 0 0 auto; transition: transform .08s linear; }
-  /* 階段三：圓圈扇形設計參考 地圖方位_10.html——飽和色扇形＋白色細分隔線＋外圈邊框 */
+  /* 階段三：圓圈扇形設計參考 地圖方位_10.html——飽和色扇形（五行配色）＋白色細分隔線＋外圈邊框 */
   .travel-compass-sector { fill-opacity: .55; stroke: #fff; stroke-width: 1.2; }
-  .travel-compass-ring { fill: none; stroke: rgba(0,0,0,.3); stroke-width: 1.2; }
-  /* 文字：改用宋體（襯線）；白色描邊(paint-order:stroke)讓文字在任何底色扇形上都清楚可讀 */
+  .travel-compass-ring { fill: none; stroke: #fff; stroke-width: 1.2; }
+  /* 文字：黑字＋宋體，白色描邊(paint-order:stroke)讓文字在任何底色扇形上都清楚可讀 */
   .travel-compass-gua, .travel-compass-dir, .travel-compass-dot {
     font-family: "Noto Serif TC", "PMingLiU", serif;
     font-weight: bold; text-anchor: middle; dominant-baseline: central;
@@ -899,8 +899,7 @@
   .travel-compass-dir { font-size: 15px; stroke: rgba(255,255,255,.9); stroke-width: 2.5px; }
   /* 卦名與方位字中間的分隔點，r 介於兩者之間 */
   .travel-compass-dot { font-size: 8px; stroke: rgba(255,255,255,.9); stroke-width: 2px; }
-  /* 吉凶標記：金＝吉。凶原本用深灰／近黑，但文字底色現在統一改黑字了，凶再用黑會跟平常沒標記的字混在一起分不出來，
-     改用跟盤面其他警示色（門迫／擊刑）同一套的紅色，才能跟預設黑字明顯區分 */
+  /* 吉凶標記：標色文字（金＝吉、黑背景下凶改用紅避免混淆），不再整片扇形描邊 */
   .travel-compass-gua.mark-lucky,   .travel-compass-dir.mark-lucky,   .travel-compass-dot.mark-lucky   { fill: #FFB700; stroke: #fff; stroke-width: 3.5px; }
   .travel-compass-gua.mark-unlucky, .travel-compass-dir.mark-unlucky, .travel-compass-dot.mark-unlucky { fill: #c0392b; stroke: #fff; stroke-width: 3.5px; }
   /* 光暈感：疊兩層 drop-shadow（貼近的窄光＋外圍的散光），用 currentColor 自動跟著金/紅走 */
@@ -919,8 +918,10 @@
   .travel-orientation-card span { flex: 1; }
   .travel-orientation-card button { border: none; border-radius: 8px; padding: 8px 12px; background: #555; color: #fff; }
   /* 回到目前位置按鈕：仿 Google Map 那種圓形箭頭浮動按鈕，放左下角避開右側的羅盤大小面板 */
-  .travel-locate-btn { position: absolute; z-index: 4; left: 12px; bottom: max(18px, env(safe-area-inset-bottom)); width: 44px; height: 44px; border-radius: 50%; border: none; background: rgba(255,255,255,.94); color: #2471a3; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,.18); pointer-events: auto; }
+  .travel-locate-btn { position: absolute; z-index: 4; right: 12px; top: 66px; width: 44px; height: 44px; border-radius: 50%; border: none; background: rgba(255,255,255,.94); color: #2471a3; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,.18); pointer-events: auto; }
   .travel-locate-btn:active { background: #eee; }
+  /* 縮放控制也搬到右邊，跟定位鈕同一側靠邊；往下推開，避免疊到工具列跟定位鈕 */
+  .travel-overlay .leaflet-top.leaflet-right { top: 118px; }
   /* 圓心錨定：工具列的開關鈕（手動決定要不要開啟，預設關閉），以及開啟後顯示的拖曳手把 */
   .travel-toolbar button.active { background: #2471a3; color: #fff; }
   .travel-anchor-handle {
@@ -938,27 +939,8 @@
   }
 
   /* ══════════════════════════════════
-     出行訣 階段一：吉凶標記模式的詢問面板／頂部提示列（皆為面板內展開的確認 UI，不使用原生 confirm()）
+     出行訣：所有提示/確認都用同一種小型泡泡，疊在中宮正中央（.cell.center 是定位基準），不使用原生 confirm()
   ══════════════════════════════════ */
-  .travel-ask-panel {
-    position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%);
-    z-index: 6000; visibility: hidden; opacity: 0;
-    background: #fff; border-radius: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.25);
-    padding: 18px 20px; width: min(260px, calc(100vw - 40px)); text-align: center;
-    font-family: "M PLUS Rounded 1c", sans-serif;
-    transition: opacity .18s ease, visibility 0s linear .18s;
-  }
-  .travel-ask-panel.is-open { visibility: visible; opacity: 1; transition: opacity .18s ease; }
-  .travel-ask-panel p { margin: 0 0 14px; font-size: 14px; color: #333; line-height: 1.5; }
-  .travel-ask-actions { display: flex; gap: 8px; }
-  .travel-ask-actions button {
-    flex: 1; padding: 9px 0; border: none; border-radius: 7px;
-    font-size: 13px; font-weight: bold; cursor: pointer; font-family: inherit;
-  }
-  .travel-ask-yes { background: #2471a3; color: #fff; }
-  .travel-ask-no  { background: #eee; color: #555; }
-
-  /* 改放中宮正中央（.cell.center 是定位基準），文字在上、取消/確認並排在下 */
   .travel-marking-banner {
     position: absolute; inset: 8%; z-index: 50; display: none;
     flex-direction: column; align-items: center; justify-content: center; gap: 8px;
@@ -1333,7 +1315,21 @@
 
     <!-- 5 中 -->
     <div class="cell center">
-    <!-- 出行訣 階段一：標記模式提示，疊在中宮正中央（.cell.center 是定位基準，見 CSS） -->
+    <!-- 出行訣：三個確認/提示泡泡都疊在中宮正中央（.cell.center 是定位基準，見 CSS），共用同一種小型泡泡樣式 -->
+    <div class="travel-marking-banner" id="travel-ask-panel">
+      <span>確定載入出行訣圖資？</span>
+      <div class="travel-marking-actions">
+        <button type="button" class="travel-marking-cancel"  onclick="confirmTravelAsk(false)" aria-label="否">✕</button>
+        <button type="button" class="travel-marking-confirm" onclick="confirmTravelAsk(true)" aria-label="是">✓</button>
+      </div>
+    </div>
+    <div class="travel-marking-banner" id="yang-submode-confirm">
+      <span>切換將重置盤面與吉凶標記。</span>
+      <div class="travel-marking-actions">
+        <button type="button" class="travel-marking-cancel"  onclick="hideYangSubSwitchConfirm()" aria-label="否">✕</button>
+        <button type="button" class="travel-marking-confirm" onclick="confirmYangSubSwitch()" aria-label="是">✓</button>
+      </div>
+    </div>
     <div class="travel-marking-banner" id="travel-marking-banner">
       <span>點擊各宮位標記吉凶</span>
       <div class="travel-marking-actions">
@@ -1524,14 +1520,6 @@
   <div id="travel-anchor-handle" class="travel-anchor-handle" title="拖曳移動羅盤圓心"></div>
 </div>
 
-<!-- 出行訣 階段一：詢問是否進入吉凶標記模式（羅盤已啟用時再次點擊中宮觸發） -->
-<div class="travel-ask-panel" id="travel-ask-panel">
-  <p>是否載入出行訣圖資？<br>載入前可先標記八宮吉凶。</p>
-  <div class="travel-ask-actions">
-    <button type="button" class="travel-ask-no"  onclick="confirmTravelAsk(false)">否</button>
-    <button type="button" class="travel-ask-yes" onclick="confirmTravelAsk(true)">是</button>
-  </div>
-</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
@@ -1607,6 +1595,21 @@ function clearChangsheng() {
 let _activeChangshengHouse = null;
 let _activeChangshengIndex = -1;
 
+// 出行訣（標記模式／方框地圖／全螢幕羅盤）只適用陽盤；切到陰盤或命盤時，三層一起收掉，不留在背景
+function closeTravelEverything() {
+  if (typeof travelMarkingActive !== 'undefined' && travelMarkingActive) {
+    exitTravelMarkingModeUI();
+  }
+  const outer = document.getElementById('outer-board');
+  if (outer && outer.classList.contains('travel-map-mode')) {
+    exitTravelMapMode();
+  }
+  const overlay = document.getElementById('travel-overlay');
+  if (overlay && overlay.classList.contains('is-open')) {
+    closeTravelMode();
+  }
+}
+
 // 陰盤／陽盤（時盤／日盤）切換
 let PLATE_MODE = 'yin';    // 'yin' | 'yang'
 let PLATE_SUBMODE = 'time'; // 'time' | 'day'（僅陽盤適用）
@@ -1617,9 +1620,9 @@ function applyPlateMode(mode) {
   document.getElementById('plate-yin-row').style.display = (mode === 'yin' && !MING_PAN_MODE) ? 'flex' : 'none';
   document.getElementById('plate-subtoggle').style.display = (mode === 'yang' && !MING_PAN_MODE) ? 'flex' : 'none';
   updateQuickNav();
-  // 出行訣開放給所有陽盤子模式；切到陰盤時，若標記模式還開著，自動退出標記 UI（travelMarks 資料保留，只是畫面收起）
-  if (typeof travelMarkingActive !== 'undefined' && travelMarkingActive && mode !== 'yang') {
-    exitTravelMarkingModeUI();
+  // 出行訣開放給所有陽盤子模式；切到陰盤時自動整個收掉（標記/地圖/全螢幕都算，travelMarks 資料保留，只是畫面收起）
+  if (mode !== 'yang') {
+    closeTravelEverything();
   }
 }
 function setPlateMode(mode) {
@@ -1643,8 +1646,48 @@ function applyYangSubMode(sub) {
   });
   updateQuickNav();
 }
+let _pendingYangSubMode = null; // 陽盤子模式切換確認期間，暫存使用者點的目標子模式
+
+// 出行訣是否有東西可能因為切換子模式而失去意義：已標記的吉凶，或標記/地圖/全螢幕任一層還開著
+function travelHasResettableState() {
+  const hasMark = TRAVEL_MARK_HOUSES.some(h => travelMarks[h] !== null);
+  if (hasMark) return true;
+  if (typeof travelMarkingActive !== 'undefined' && travelMarkingActive) return true;
+  const outer = document.getElementById('outer-board');
+  if (outer && outer.classList.contains('travel-map-mode')) return true;
+  const overlay = document.getElementById('travel-overlay');
+  if (overlay && overlay.classList.contains('is-open')) return true;
+  return false;
+}
+
+function showYangSubSwitchConfirm() {
+  document.getElementById('yang-submode-confirm').classList.add('is-open');
+}
+function hideYangSubSwitchConfirm() {
+  document.getElementById('yang-submode-confirm').classList.remove('is-open');
+  _pendingYangSubMode = null;
+}
+function confirmYangSubSwitch() {
+  const sub = _pendingYangSubMode;
+  hideYangSubSwitchConfirm();
+  if (!sub) return;
+  // 盤面重新起盤後，舊的吉凶標記已經對不上新的宮位意義，清空；地圖本身（位置/縮放/圖資）不動，維持原樣
+  TRAVEL_MARK_HOUSES.forEach(h => {
+    travelMarks[h] = null;
+    renderTravelMark(h);
+  });
+  updateTravelCompassSectorMarks();
+  applyYangSubMode(sub);
+}
+
 function setYangSubMode(sub) {
-  if (MING_PAN_MODE) exitMingPanMode();
+  if (MING_PAN_MODE) { exitMingPanMode(); applyYangSubMode(sub); return; }
+  if (sub === PLATE_SUBMODE) return; // 沒有真的切換子模式，不用跳確認
+  if (travelHasResettableState()) {
+    _pendingYangSubMode = sub;
+    showYangSubSwitchConfirm();
+    return;
+  }
   applyYangSubMode(sub);
 }
 
@@ -1684,10 +1727,8 @@ function toggleMingPan() {
 
   // 點「命盤」開啟
   MING_PAN_MODE = true;
-  // 出行訣不適用命盤；標記模式若還開著，自動退出（travelMarks 資料保留，只是畫面收起）
-  if (typeof travelMarkingActive !== 'undefined' && travelMarkingActive) {
-    exitTravelMarkingModeUI();
-  }
+  // 出行訣不適用命盤；標記/地圖/全螢幕若還開著，一起自動收掉（travelMarks 資料保留，只是畫面收起）
+  closeTravelEverything();
   _prevPlateMode = PLATE_MODE;
   _prevPlateSubmode = PLATE_SUBMODE;
   document.getElementById('plate-mingpan').classList.add('active');
@@ -1928,7 +1969,7 @@ function cycleTravelMark(house) {
 }
 
 // 階段三：把 travelMarks 目前狀態套到全螢幕扇形羅盤（travel-compass-disc）的宮位文字上
-// 金字＝吉、黑字＝凶，卦名／方位字／中間分隔點三層一起變色，不改動扇形本身的顏色與分隔線
+// 金字＝吉、黑字＝凶，不改動扇形本身的顏色與分隔線（整片扇形描邊視覺上太笨重，見「還是高亮文字」的討論）
 function updateTravelCompassSectorMarks() {
   TRAVEL_MARK_HOUSES.forEach(h => {
     const v = travelMarks[h];
@@ -2187,7 +2228,8 @@ function setTravelStatus(message) {
 function initializeTravelMap() {
   if (travelMap || typeof L === 'undefined') return;
   // 未取得定位前維持中性世界視角；不可預設任何國家或地區。
-  travelMap = L.map('travel-map', { zoomControl: true, attributionControl: true }).setView([20, 0], 2);
+  travelMap = L.map('travel-map', { zoomControl: false, attributionControl: true }).setView([20, 0], 2);
+  L.control.zoom({ position: 'topright' }).addTo(travelMap);
   L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
     maxZoom: 20,
     subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
