@@ -217,12 +217,12 @@
   /* 高亮 */
   .cell.highlighted { border-color: #e67e22 !important; background: #fffaf5; }
 
-  /* 每個小格：只畫右邊和下邊 */
+  /* 每個小格：內格線已依需求清除，只留每宮外框（.cell 的 2px 外框線） */
   .gc {
     border-top: none;
     border-left: none;
-    border-right: 1px solid #ddd;
-    border-bottom: 1px solid #ddd;
+    border-right: none;
+    border-bottom: none;
     background: transparent;
     box-sizing: border-box;
     overflow: hidden;
@@ -235,14 +235,13 @@
 
   /* 中宮 */
   .cell.center { background: #eeebe3; cursor: default; border: none; }
-  /* 中宮小格：全部自己負責四邊；顏色用#ccc（比其他宮位的#ddd深一點），
-     因為中宮底色是#eeebe3（比其他宮位的白底#fff深），這樣線在視覺對比上才跟其他宮位一致 */
+  /* 中宮小格：內格線已依需求清除，四邊外框線（#g5r*c* 那組）維持，負責拼出中宮外框 */
   .gc-center {
     background: transparent;
     border-top: none;
     border-left: none;
-    border-right: 1px solid #ccc;
-    border-bottom: 1px solid #ccc;
+    border-right: none;
+    border-bottom: none;
   }
   /* 每宮最右欄、最下列不畫線（外框已經有線了），寫法比照 .gc */
   .gc-center[style*="grid-column:3;"] { border-right:  none; }
@@ -869,7 +868,8 @@
   /* 用 vmax（螢幕長邊）作為基準，橫向裝置放大時才會覆蓋左右與四角。 */
   .travel-compass-disc { width: var(--travel-compass-size, 88vmax); height: var(--travel-compass-size, 88vmax); flex: 0 0 auto; max-width: none; max-height: none; transition: transform .08s linear; }
   .travel-compass-disc .travel-compass-gua,
-  .travel-compass-disc .travel-compass-dir { display: none; }
+  .travel-compass-disc .travel-compass-dir,
+  .travel-compass-disc .travel-compass-dot { display: none; }
   .travel-compass-disc .travel-compass-center { display: none; }
   /* 文字獨立為固定內圈：圓盤放大時不跟著放大，仍維持在圓心附近。 */
   .travel-compass-label-disc { position: absolute; width: min(60vmin, 380px); height: min(60vmin, 380px); flex: 0 0 auto; transition: transform .08s linear; }
@@ -877,7 +877,7 @@
   .travel-compass-sector { fill-opacity: .55; stroke: #fff; stroke-width: 1.2; }
   .travel-compass-ring { fill: none; stroke: rgba(0,0,0,.3); stroke-width: 1.2; }
   /* 文字：比照參考檔案，白色描邊(paint-order:stroke)讓文字在任何底色扇形上都清楚可讀；字體用系統預設 sans-serif（比照參考檔案，不用專案的 M PLUS Rounded 1c） */
-  .travel-compass-gua, .travel-compass-dir {
+  .travel-compass-gua, .travel-compass-dir, .travel-compass-dot {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-weight: bold; text-anchor: middle; dominant-baseline: central;
     paint-order: stroke; stroke-linejoin: round;
@@ -886,6 +886,8 @@
   .travel-compass-gua { font-size: 11.5px; stroke: rgba(255,255,255,.95); stroke-width: 3px; }
   /* 外層：方位字（靠圓周），字體比卦名大 */
   .travel-compass-dir { font-size: 15px; stroke: rgba(255,255,255,.9); stroke-width: 2.5px; }
+  /* 卦名與方位字中間的分隔點，r 介於兩者之間 */
+  .travel-compass-dot { font-size: 8px; stroke: rgba(255,255,255,.9); stroke-width: 2px; }
   /* 吉凶標記：改成直接標色該宮位的文字（金＝吉、黑＝凶），不再整片扇形描邊——避免整塊扇形被邊框圈住的笨重感 */
   .travel-compass-gua.mark-lucky,   .travel-compass-dir.mark-lucky   { fill: #b8860b; stroke: #fff; stroke-width: 3.5px; }
   .travel-compass-gua.mark-unlucky, .travel-compass-dir.mark-unlucky { fill: #1a1a1a; stroke: #fff; stroke-width: 3.5px; }
@@ -976,6 +978,8 @@
 
   /* 地圖模式：九宮格線（.cell 邊框）與 r1c1 宮位標籤留在畫面上，其餘內容透明化／隱藏，讓地圖從縫間透出 */
   .outer.travel-map-mode .grid { position: relative; z-index: 1; pointer-events: none; }
+  /* 盤面顯示時，吉凶標記格要能點擊修改（見 travelMarkEditable）——.grid 整體 pointer-events:none 會連帶擋掉，這裡單獨救回來 */
+  .outer.travel-map-mode.board-visible .gc-left2 { pointer-events: auto; }
   .outer.travel-map-mode .cell { background: transparent; }
   .outer.travel-map-mode .gc-shen,
   .outer.travel-map-mode .gc-star,
@@ -1421,6 +1425,14 @@
       <text class="travel-compass-gua" data-house="2" x="100" y="153" transform="rotate(45 100 100)"  fill="#0D47A1">坤</text>
       <text class="travel-compass-gua" data-house="7" x="100" y="153" transform="rotate(90 100 100)"  fill="#4A148C">兌</text>
       <text class="travel-compass-gua" data-house="6" x="100" y="153" transform="rotate(135 100 100)" fill="#880E4F">乾</text>
+      <text class="travel-compass-dot" data-house="1" x="100" y="160" transform="rotate(180 100 100)" fill="#B71C1C">・</text>
+      <text class="travel-compass-dot" data-house="8" x="100" y="160" transform="rotate(225 100 100)" fill="#E65100">・</text>
+      <text class="travel-compass-dot" data-house="3" x="100" y="160" transform="rotate(270 100 100)" fill="#827717">・</text>
+      <text class="travel-compass-dot" data-house="4" x="100" y="160" transform="rotate(315 100 100)" fill="#33691E">・</text>
+      <text class="travel-compass-dot" data-house="9" x="100" y="160" transform="rotate(0 100 100)" fill="#006064">・</text>
+      <text class="travel-compass-dot" data-house="2" x="100" y="160" transform="rotate(45 100 100)" fill="#0D47A1">・</text>
+      <text class="travel-compass-dot" data-house="7" x="100" y="160" transform="rotate(90 100 100)" fill="#4A148C">・</text>
+      <text class="travel-compass-dot" data-house="6" x="100" y="160" transform="rotate(135 100 100)" fill="#880E4F">・</text>
       <text class="travel-compass-dir" data-house="1" x="100" y="168" transform="rotate(180 100 100)" fill="#B71C1C">北</text>
       <text class="travel-compass-dir" data-house="8" x="100" y="168" transform="rotate(225 100 100)" fill="#E65100">東北</text>
       <text class="travel-compass-dir" data-house="3" x="100" y="168" transform="rotate(270 100 100)" fill="#827717">東</text>
@@ -1440,6 +1452,14 @@
       <text class="travel-compass-gua" data-house="2" x="100" y="153" transform="rotate(45 100 100)"  fill="#0D47A1">坤</text>
       <text class="travel-compass-gua" data-house="7" x="100" y="153" transform="rotate(90 100 100)"  fill="#4A148C">兌</text>
       <text class="travel-compass-gua" data-house="6" x="100" y="153" transform="rotate(135 100 100)" fill="#880E4F">乾</text>
+      <text class="travel-compass-dot" data-house="1" x="100" y="160" transform="rotate(180 100 100)" fill="#B71C1C">・</text>
+      <text class="travel-compass-dot" data-house="8" x="100" y="160" transform="rotate(225 100 100)" fill="#E65100">・</text>
+      <text class="travel-compass-dot" data-house="3" x="100" y="160" transform="rotate(270 100 100)" fill="#827717">・</text>
+      <text class="travel-compass-dot" data-house="4" x="100" y="160" transform="rotate(315 100 100)" fill="#33691E">・</text>
+      <text class="travel-compass-dot" data-house="9" x="100" y="160" transform="rotate(0 100 100)" fill="#006064">・</text>
+      <text class="travel-compass-dot" data-house="2" x="100" y="160" transform="rotate(45 100 100)" fill="#0D47A1">・</text>
+      <text class="travel-compass-dot" data-house="7" x="100" y="160" transform="rotate(90 100 100)" fill="#4A148C">・</text>
+      <text class="travel-compass-dot" data-house="6" x="100" y="160" transform="rotate(135 100 100)" fill="#880E4F">・</text>
       <text class="travel-compass-dir" data-house="1" x="100" y="168" transform="rotate(180 100 100)" fill="#B71C1C">北</text>
       <text class="travel-compass-dir" data-house="8" x="100" y="168" transform="rotate(225 100 100)" fill="#E65100">東北</text>
       <text class="travel-compass-dir" data-house="3" x="100" y="168" transform="rotate(270 100 100)" fill="#827717">東</text>
