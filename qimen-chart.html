@@ -882,7 +882,7 @@
   .travel-compass { position: absolute; z-index: 3; left: 50%; top: 50%; display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0; transform: translate(-50%,-50%) scale(.82); transition: opacity .28s ease .11s, transform .34s ease .11s; }
   .travel-overlay.is-open .travel-compass { opacity: 1; transform: translate(-50%,-50%) scale(1); }
   /* 用 vmax（螢幕長邊）作為基準，橫向裝置放大時才會覆蓋左右與四角。 */
-  .travel-compass-disc { width: var(--travel-compass-size, 30vmax); height: var(--travel-compass-size, 30vmax); flex: 0 0 auto; max-width: none; max-height: none; transition: transform .08s linear; }
+  .travel-compass-disc { width: var(--travel-compass-size, 45vmax); height: var(--travel-compass-size, 45vmax); flex: 0 0 auto; max-width: none; max-height: none; transition: transform .08s linear; }
   .travel-compass-disc .travel-compass-gua,
   .travel-compass-disc .travel-compass-dir,
   .travel-compass-disc .travel-compass-dot { display: none; }
@@ -923,17 +923,50 @@
   .travel-orientation-card.is-visible { display: flex; }
   .travel-orientation-card span { flex: 1; }
   .travel-orientation-card button { border: none; border-radius: 8px; padding: 8px 12px; background: #555; color: #fff; }
-  /* 回到目前位置按鈕、圓心錨定開關鈕：改放右下角，疊在「羅盤大小」面板正上方（原本在右上角，2026.08移下來） */
-  .travel-locate-btn, .travel-anchor-toggle { position: absolute; z-index: 4; right: 12px; width: 44px; height: 44px; border-radius: 50%; border: none; font-size: 18px; background: rgba(255,255,255,.94); color: #2471a3; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,.18); pointer-events: auto; }
-  .travel-anchor-toggle svg { width: 23px; height: 23px; display: block; }
-  .travel-locate-btn:active, .travel-anchor-toggle:active { background: #eee; }
-  /* 定位鈕貼著羅盤大小面板上緣；錨定鈕疊在定位鈕上方 */
-  .travel-locate-btn { bottom: calc(max(18px, env(safe-area-inset-bottom)) + 78px); }
-  .travel-anchor-toggle { bottom: calc(max(18px, env(safe-area-inset-bottom)) + 130px); }
+  /* 回到目前位置按鈕：貼著羅盤大小面板上緣 */
+  .travel-locate-btn { position: absolute; z-index: 4; right: 12px; bottom: calc(max(18px, env(safe-area-inset-bottom)) + 78px); width: 44px; height: 44px; border-radius: 50%; border: none; font-size: 18px; background: rgba(255,255,255,.94); color: #2471a3; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,.18); pointer-events: auto; }
+  .travel-locate-btn:active { background: #eee; }
   /* 縮放控制搬到右邊，跟定位鈕同一側靠邊 */
   .travel-overlay .leaflet-top.leaflet-right { top: 12px; }
-  /* 圓心錨定開關鈕啟用態 */
-  .travel-anchor-toggle.active { background: #2471a3; color: #fff; }
+
+  /* ══════════════════════════════════
+     出行訣：路線導航＋圓心錨定，收合式控制鈕，只在全螢幕扇形羅盤模式提供
+     交通工具、點位/錨定 兩顆觸發鈕收合貼右側，點了向左展開；右側跟定位鈕、羅盤大小面板同一欄，維持既有堆疊順序
+  ══════════════════════════════════ */
+  .expand-control { position: absolute; z-index: 4; right: 12px; display: flex; align-items: center; flex-direction: row-reverse; gap: 0; }
+  .expand-trigger {
+    width: 44px; height: 44px; flex: 0 0 auto; border-radius: 50%; border: none;
+    background: rgba(255,255,255,.94); box-shadow: 0 2px 8px rgba(0,0,0,.18);
+    display: flex; align-items: center; justify-content: center; font-size: 19px; color: #333;
+    pointer-events: auto; position: relative; z-index: 2;
+  }
+  .expand-trigger:active { background: #eee; }
+  .expand-trigger.active { background: #2471a3; color: #fff; }
+  .expand-options { display: flex; flex-direction: row-reverse; gap: 8px; margin-right: 8px; overflow: hidden; max-width: 0; opacity: 0; transition: max-width .28s ease, opacity .2s ease; }
+  .expand-control.is-open .expand-options { max-width: 260px; opacity: 1; }
+  .expand-options button {
+    width: 40px; height: 40px; flex: 0 0 auto; border-radius: 50%; border: none;
+    background: rgba(255,255,255,.94); box-shadow: 0 2px 6px rgba(0,0,0,.16);
+    display: flex; align-items: center; justify-content: center; font-size: 17px;
+    pointer-events: auto;
+  }
+  .expand-options button:active { background: #eee; }
+  .expand-options button.armed { background: #2471a3; color: #fff; }
+  .expand-options button.disabled { opacity: .35; pointer-events: none; } /* 未設起點前鎖住中途點/終點；起點/終點各自設過一次後鎖住自己，需刪除才能重設 */
+  #transport-control { bottom: calc(max(18px, env(safe-area-inset-bottom)) + 190px); }
+  #pin-control { bottom: calc(max(18px, env(safe-area-inset-bottom)) + 130px); }
+
+  /* 刪除確認小泡泡：點地圖上已放置的圖釘會跳出，取代原本面板裡的「刪除最後一點/清除全部」按鈕 */
+  .remove-popup { display: none; position: absolute; z-index: 6; transform: translate(-50%, calc(-100% - 32px)); background: rgba(255,255,255,.98); border-radius: 12px; padding: 10px 12px; box-shadow: 0 4px 14px rgba(0,0,0,.22); text-align: center; font: 12px "M PLUS Rounded 1c", sans-serif; color: #333; pointer-events: auto; }
+  .remove-popup.is-visible { display: block; }
+  .remove-popup .btn-row { display: flex; gap: 8px; margin-top: 6px; justify-content: center; }
+  .remove-popup button { border: none; border-radius: 8px; width: 32px; height: 28px; font-size: 14px; }
+  .remove-popup .btn-cancel { background: #eee; color: #666; }
+  .remove-popup .btn-confirm { background: #e74c3c; color: #fff; }
+  /* 地圖上的起點/中途點/終點圖釘（L.divIcon），色碼跟展開選單裡的選項一致 */
+  .travel-route-marker { pointer-events: auto; filter: drop-shadow(0 1px 3px rgba(0,0,0,.35)); }
+  .travel-route-marker svg { display: block; }
+
   .travel-anchor-handle {
     position: absolute; display: none;
     width: 22px; height: 22px; border-radius: 50%;
@@ -1526,14 +1559,45 @@
   </div>
   <div class="travel-toolbar"><button type="button" onclick="closeTravelMode()">← 返回盤面</button></div>
   <div class="travel-status" id="travel-status">載入地圖與定位中…</div>
-  <button type="button" class="travel-anchor-toggle" id="travel-anchor-toggle" onclick="toggleTravelAnchor()" aria-label="錨定圓心於地圖座標" title="錨定圓心於地圖座標"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg></button>
-  <div class="travel-size-control"><label for="travel-size-range">羅盤大小 <span id="travel-size-value">30%</span></label><input id="travel-size-range" type="range" min="20" max="250" value="30" aria-label="調整羅盤大小"></div>
+  <div class="travel-size-control"><label for="travel-size-range">羅盤大小 <span id="travel-size-value">45%</span></label><input id="travel-size-range" type="range" min="35" max="250" value="45" aria-label="調整羅盤大小"></div>
   <div class="travel-orientation-card" id="travel-orientation-card"><span>啟用羅盤，讓方位圖跟著手機朝向轉動</span><button type="button" id="travel-orientation-btn">啟用</button></div>
   <button type="button" class="travel-locate-btn" aria-label="回到目前位置" onclick="recenterTravelPosition()">
     <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2 L19 21 L12 17 L5 21 Z"/></svg>
   </button>
   <!-- 圓心錨定：拖曳手把，必須跟 .travel-compass 分開放（它有 pointer-events:none），才能單獨接收拖曳事件 -->
   <div id="travel-anchor-handle" class="travel-anchor-handle" title="拖曳移動羅盤圓心"></div>
+
+  <!-- 出行訣：路線導航＋圓心錨定，收合式控制鈕，只在全螢幕扇形羅盤模式提供。
+       交通工具鈕：收合顯示目前選定的交通工具，點了向左展開三個選項，選一個自動收合。
+       點位/錨定鈕：沿用水滴圖釘造型，展開後是 起點/中途點/終點/錨定 四個選項；
+       起點/終點各自設過一次後鎖住，需先點地圖上的圖釘刪除才能重設；中途點不受限。 -->
+  <div class="expand-control" id="transport-control">
+    <button type="button" class="expand-trigger" id="transport-trigger" onclick="toggleExpandControl('transport-control')">🚶</button>
+    <div class="expand-options" id="transport-options">
+      <button type="button" data-mode="walking" onclick="selectTravelTransportMode('walking')">🚶</button>
+      <button type="button" data-mode="cycling" onclick="selectTravelTransportMode('cycling')">🚲</button>
+      <button type="button" data-mode="driving" onclick="selectTravelTransportMode('driving')">🚗</button>
+    </div>
+  </div>
+  <div class="expand-control" id="pin-control">
+    <button type="button" class="expand-trigger" id="pin-trigger" onclick="toggleExpandControl('pin-control')">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
+    </button>
+    <div class="expand-options" id="pin-options">
+      <button type="button" id="opt-start" onclick="armTravelRouteMode('start')" style="color:#2ecc71;"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg></button>
+      <button type="button" id="opt-via" onclick="armTravelRouteMode('via')" style="color:#e67e22;"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg></button>
+      <button type="button" id="opt-end" onclick="armTravelRouteMode('end')" style="color:#e74c3c;"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg></button>
+      <button type="button" id="opt-anchor" onclick="toggleTravelAnchor()" style="color:#2471a3;"><svg viewBox="0 0 24 28" width="22" height="26"><g opacity="0.45"><path d="M12 24L23.2 24.0L19.92 26.83Z" fill="#29B6F6"/><path d="M12 24L19.92 26.83L12.0 28.0Z" fill="#6F4E37"/><path d="M12 24L12.0 28.0L4.08 26.83Z" fill="#2E7D32"/><path d="M12 24L4.08 26.83L0.8 24.0Z" fill="#66BB6A"/><path d="M12 24L0.8 24.0L4.08 21.17Z" fill="#D32F2F"/><path d="M12 24L4.08 21.17L12.0 20.0Z" fill="#C8A878"/><path d="M12 24L12.0 20.0L19.92 21.17Z" fill="#CFD5DC"/><path d="M12 24L19.92 21.17L23.2 24.0Z" fill="#8E9AAF"/></g><path fill="currentColor" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><rect x="9.7" y="8.6" width="4.6" height="3.6" rx="0.8" fill="#fff"/><path d="M10.6 8.6V7.4a1.4 1.4 0 0 1 2.8 0v1.2" fill="none" stroke="#fff" stroke-width="0.9" stroke-linecap="round"/><circle cx="12" cy="10.2" r="0.5" fill="currentColor"/></svg></button>
+    </div>
+  </div>
+
+  <div class="remove-popup" id="travel-route-remove-popup">
+    移除？
+    <div class="btn-row">
+      <button type="button" class="btn-cancel" onclick="cancelTravelRouteRemove()">✕</button>
+      <button type="button" class="btn-confirm" onclick="confirmTravelRouteRemove()">✓</button>
+    </div>
+  </div>
 </div>
 
 
@@ -2258,6 +2322,16 @@ function initializeTravelMap() {
   // 錨定模式下，地圖平移/縮放要重算錨點對應的螢幕座標
   travelMap.on('move zoom', function() {
     if (travelCompassAnchored) applyTravelCompassPos();
+    // 刪除確認泡泡是用螢幕座標定位的，地圖一移動座標就失效，直接關掉比重新計算位置更不容易誤觸
+    if (travelRoutePendingRemoveIndex !== null) {
+      travelRoutePendingRemoveIndex = null;
+      const popup = document.getElementById('travel-route-remove-popup');
+      if (popup) popup.classList.remove('is-visible');
+    }
+  });
+  travelMap.on('click', function(e) {
+    handleTravelRouteMapClick();          // 收起展開選單、關掉刪除確認泡泡
+    handleTravelRouteMapPlacementClick(e); // 點位模式啟用時，點地圖設起點/中途點/終點
   });
 }
 
@@ -2296,6 +2370,191 @@ function renderTravelCompass(heading) {
   if (labelEl) labelEl.style.transform = `rotate(${(360 - heading) % 360}deg)`;
 }
 
+// ══════════════════════════════════
+// 出行訣：路線導航（起點/中途點/終點＋交通工具切換＋OSRM 算路線）
+// 概念參考 map-t1-kappa 那個工具（點選模式後點地圖設點，不做店家搜尋），UI 走自己的收合式風格；
+// 圓心錨定的觸發鈕併入這裡的「點位/錨定」展開選單（見 opt-anchor），不再是獨立按鈕
+// ══════════════════════════════════
+let travelRouteMode = null;       // 目前選取的點位模式：'start' | 'via' | 'end' | null（未選取）
+let travelRoutePoints = [];       // [{type, latlng, marker}]，依實際點擊順序記錄
+let travelRouteProfile = 'walking'; // OSRM profile：driving | walking | cycling，預設步行
+let travelRouteLine = null;       // 算出來的路線圖層（L.geoJSON）
+let travelRoutePendingRemoveIndex = null; // 目前跳出「移除？」小泡泡、等待確認的點位索引
+
+const TRAVEL_TRANSPORT_ICONS = { walking: '🚶', cycling: '🚲', driving: '🚗' };
+const TRAVEL_ROUTE_MARKER_COLORS = { start: '#2ecc71', via: '#e67e22', end: '#e74c3c' };
+const TRAVEL_ROUTE_PIN_SVG = '<svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>';
+const TRAVEL_POINT_LABELS = { start: '起點', via: '中途點', end: '終點' };
+
+// 展開/收合：交通工具、點位/錨定 兩顆觸發鈕共用；同時間只開一個，避免互相打架
+function toggleExpandControl(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  document.querySelectorAll('.expand-control').forEach(function(c) {
+    if (c.id !== id) c.classList.remove('is-open');
+  });
+  el.classList.toggle('is-open');
+}
+
+function selectTravelTransportMode(mode) {
+  travelRouteProfile = mode;
+  const triggerEl = document.getElementById('transport-trigger');
+  if (triggerEl) triggerEl.textContent = TRAVEL_TRANSPORT_ICONS[mode];
+  const controlEl = document.getElementById('transport-control');
+  if (controlEl) controlEl.classList.remove('is-open');
+  calculateTravelRoute(); // 已有路線時，切換交通工具要重新算一次
+}
+
+function hasTravelStartPoint() {
+  return travelRoutePoints.some(function(p) { return p.type === 'start'; });
+}
+function hasTravelEndPoint() {
+  return travelRoutePoints.some(function(p) { return p.type === 'end'; });
+}
+
+// 未設起點前，中途點／終點鎖住不能選；起點/終點各自只能有一個，已存在時鎖住該選項，需先點地圖上的圖釘刪除才能重選；中途點不受限
+function updateTravelRoutePointAvailability() {
+  const ready = hasTravelStartPoint();
+  const viaBtn = document.getElementById('opt-via');
+  if (viaBtn) { viaBtn.disabled = !ready; viaBtn.classList.toggle('disabled', !ready); }
+  const startBtn = document.getElementById('opt-start');
+  if (startBtn) { startBtn.disabled = ready; startBtn.classList.toggle('disabled', ready); }
+  const endReady = ready && !hasTravelEndPoint();
+  const endBtn = document.getElementById('opt-end');
+  if (endBtn) { endBtn.disabled = !endReady; endBtn.classList.toggle('disabled', !endReady); }
+}
+
+function updateTravelRouteArmedButtons() {
+  ['start', 'via', 'end'].forEach(function(t) {
+    const btn = document.getElementById('opt-' + t);
+    if (btn) btn.classList.toggle('armed', travelRouteMode === t);
+  });
+}
+
+function armTravelRouteMode(mode) {
+  if (mode === 'via' && !hasTravelStartPoint()) { setTravelStatus('請先設置起點'); return; }
+  if (mode === 'end' && !hasTravelStartPoint()) { setTravelStatus('請先設置起點'); return; }
+  if (mode === 'start' && hasTravelStartPoint()) { setTravelStatus('已有起點，請先刪除再重新設置'); return; }
+  if (mode === 'end' && hasTravelEndPoint()) { setTravelStatus('已有終點，請先刪除再重新設置'); return; }
+  travelRouteMode = (travelRouteMode === mode) ? null : mode; // 再點一次同一個按鈕＝取消選取
+  const controlEl = document.getElementById('pin-control');
+  if (controlEl) controlEl.classList.remove('is-open');
+  updateTravelRouteArmedButtons();
+  const hintMap = { start: '🟢 點擊地圖設置起點', via: '🟠 點擊地圖新增中途點', end: '🔴 點擊地圖設置終點' };
+  setTravelStatus(travelRouteMode ? hintMap[travelRouteMode] : '選擇下方模式後點地圖設點');
+}
+
+function createTravelRouteMarker(latlng, type) {
+  const icon = L.divIcon({
+    className: 'travel-route-marker',
+    html: `<span style="color:${TRAVEL_ROUTE_MARKER_COLORS[type]}">${TRAVEL_ROUTE_PIN_SVG}</span>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 28] // 尖端對齊點擊座標
+  });
+  const marker = L.marker(latlng, { icon: icon }).addTo(travelMap);
+  marker.on('click', function() { showTravelRouteRemovePopup(marker, type); });
+  return marker;
+}
+
+function showTravelRouteRemovePopup(marker, type) {
+  const idx = travelRoutePoints.findIndex(function(p) { return p.marker === marker; });
+  if (idx === -1 || !travelMap) return;
+  travelRoutePendingRemoveIndex = idx;
+  const popup = document.getElementById('travel-route-remove-popup');
+  const pt = travelMap.latLngToContainerPoint(marker.getLatLng());
+  popup.style.left = pt.x + 'px';
+  popup.style.top = pt.y + 'px';
+  popup.classList.add('is-visible');
+  setTravelStatus('要移除這個' + TRAVEL_POINT_LABELS[type] + '嗎？點✓確認或✕取消');
+}
+
+function cancelTravelRouteRemove() {
+  travelRoutePendingRemoveIndex = null;
+  document.getElementById('travel-route-remove-popup').classList.remove('is-visible');
+  setTravelStatus('選擇下方模式後點地圖設點');
+}
+
+function confirmTravelRouteRemove() {
+  if (travelRoutePendingRemoveIndex === null) return;
+  const p = travelRoutePoints[travelRoutePendingRemoveIndex];
+  if (travelMap) travelMap.removeLayer(p.marker);
+  travelRoutePoints.splice(travelRoutePendingRemoveIndex, 1);
+  travelRoutePendingRemoveIndex = null;
+  document.getElementById('travel-route-remove-popup').classList.remove('is-visible');
+  updateTravelRoutePointAvailability();
+  setTravelStatus('已移除');
+  calculateTravelRoute();
+}
+
+function handleTravelRouteMapClick() {
+  // 點地圖空白處：收起展開選單、關掉刪除確認泡泡（跟正常地圖操作手感一致）
+  document.querySelectorAll('.expand-control').forEach(function(c) { c.classList.remove('is-open'); });
+  travelRoutePendingRemoveIndex = null;
+  const popup = document.getElementById('travel-route-remove-popup');
+  if (popup) popup.classList.remove('is-visible');
+}
+
+function handleTravelRouteMapPlacementClick(e) {
+  if (!travelRouteMode || !travelMap) return;
+  const marker = createTravelRouteMarker(e.latlng, travelRouteMode);
+  travelRoutePoints.push({ type: travelRouteMode, latlng: e.latlng, marker: marker });
+  const placedType = travelRouteMode;
+  travelRouteMode = null; // 放置後自動取消選取，避免下一次點地圖誤放點
+  updateTravelRouteArmedButtons();
+  updateTravelRoutePointAvailability();
+  setTravelStatus(TRAVEL_POINT_LABELS[placedType] + '已設置');
+  calculateTravelRoute();
+}
+
+// 依 OSRM 需要的順序組排：起點 → 中途點（依加入順序） → 終點；起點/終點不存在時自然略過
+function getOrderedTravelRoutePoints() {
+  const start = travelRoutePoints.find(function(p) { return p.type === 'start'; });
+  const end = travelRoutePoints.find(function(p) { return p.type === 'end'; });
+  const vias = travelRoutePoints.filter(function(p) { return p.type === 'via'; });
+  const ordered = [];
+  if (start) ordered.push(start);
+  ordered.push.apply(ordered, vias);
+  if (end) ordered.push(end);
+  return ordered;
+}
+
+function calculateTravelRoute() {
+  if (travelRouteLine) { travelMap.removeLayer(travelRouteLine); travelRouteLine = null; }
+  const points = getOrderedTravelRoutePoints();
+  if (points.length < 2) return;
+  const coordStr = points.map(function(p) { return p.latlng.lng + ',' + p.latlng.lat; }).join(';');
+  const url = 'https://router.project-osrm.org/route/v1/' + travelRouteProfile + '/' + coordStr + '?overview=full&geometries=geojson';
+  setTravelStatus('計算路線中…');
+  fetch(url).then(function(r) { return r.json(); }).then(function(data) {
+    if (!data.routes || !data.routes.length) { setTravelStatus('找不到路線'); return; }
+    const route = data.routes[0];
+    travelRouteLine = L.geoJSON(route.geometry, { style: { color: '#2471a3', weight: 5, opacity: .85 } }).addTo(travelMap);
+    travelMap.fitBounds(travelRouteLine.getBounds(), { padding: [40, 40] });
+    const km = (route.distance / 1000).toFixed(1);
+    const min = Math.round(route.duration / 60);
+    setTravelStatus('約 ' + km + ' 公里・' + min + ' 分鐘');
+  }).catch(function() { setTravelStatus('路線計算失敗，請確認網路連線'); });
+}
+
+function clearAllTravelRoutePoints() {
+  travelRoutePoints.forEach(function(p) { if (travelMap) travelMap.removeLayer(p.marker); });
+  travelRoutePoints = [];
+  if (travelRouteLine && travelMap) { travelMap.removeLayer(travelRouteLine); travelRouteLine = null; }
+}
+
+// 離開全螢幕出行訣時，路線導航狀態一併重置（比照圓心錨定的重置邏輯），下次重新進入是乾淨狀態
+function resetTravelRoute() {
+  clearAllTravelRoutePoints();
+  travelRouteMode = null;
+  travelRoutePendingRemoveIndex = null;
+  updateTravelRouteArmedButtons();
+  updateTravelRoutePointAvailability();
+  document.querySelectorAll('.expand-control').forEach(function(c) { c.classList.remove('is-open'); });
+  const popup = document.getElementById('travel-route-remove-popup');
+  if (popup) popup.classList.remove('is-visible');
+  // 交通工具選擇維持不重設（跟羅盤大小一樣算是使用偏好），只重設點位跟展開狀態
+}
+
 // ── 圓心錨定（手動，預設關閉）──
 // 關閉：羅盤浮在畫面正中央（left/top:50%，跟 .travel-compass 原本的置中邏輯一致）
 // 開啟：羅盤圓心固定在 travelCompassAnchorLatLng 這個地理座標，隨地圖平移/縮放重算螢幕位置
@@ -2321,8 +2580,12 @@ function applyTravelCompassPos() {
 
 function toggleTravelAnchor() {
   travelCompassAnchored = !travelCompassAnchored;
-  const btn = document.getElementById('travel-anchor-toggle');
-  if (btn) btn.classList.toggle('active', travelCompassAnchored);
+  const optBtn = document.getElementById('opt-anchor');
+  if (optBtn) optBtn.classList.toggle('armed', travelCompassAnchored);
+  const triggerBtn = document.getElementById('pin-trigger');
+  if (triggerBtn) triggerBtn.classList.toggle('active', travelCompassAnchored);
+  const controlEl = document.getElementById('pin-control');
+  if (controlEl) controlEl.classList.remove('is-open'); // 選了就收合，跟起點/中途點/終點的手感一致
   if (travelCompassAnchored) {
     // 開啟當下：抓目前畫面中心對應的地圖座標，當作初始錨點（比照參考做法）
     if (travelMap) travelCompassAnchorLatLng = travelMap.getCenter();
@@ -2463,9 +2726,12 @@ function closeTravelMode() {
   // 關閉全螢幕：圓心錨定重設回預設關閉狀態，下次重新進入維持「浮在畫面正中央」的預設行為
   travelCompassAnchored = false;
   travelCompassAnchorLatLng = null;
-  const anchorBtn = document.getElementById('travel-anchor-toggle');
-  if (anchorBtn) anchorBtn.classList.remove('active');
+  const anchorOptBtn = document.getElementById('opt-anchor');
+  if (anchorOptBtn) anchorOptBtn.classList.remove('armed');
+  const pinTriggerBtn = document.getElementById('pin-trigger');
+  if (pinTriggerBtn) pinTriggerBtn.classList.remove('active');
   applyTravelCompassPos();
+  resetTravelRoute(); // 路線導航狀態一併重置，下次重新進入是乾淨狀態
   setTimeout(function() {
     if (board && travelBoardPlaceholder) {
       travelBoardPlaceholder.parentNode.insertBefore(board, travelBoardPlaceholder);
