@@ -890,7 +890,7 @@
   /* 文字獨立為固定內圈：圓盤放大時不跟著放大，仍維持在圓心附近。 */
   .travel-compass-label-disc { position: absolute; width: min(60vmin, 380px); height: min(60vmin, 380px); flex: 0 0 auto; transition: transform .08s linear; }
   /* 階段三：圓圈扇形設計參考 地圖方位_10.html——飽和色扇形（五行配色）＋白色細分隔線＋外圈邊框 */
-  .travel-compass-sector { fill-opacity: .55; stroke: #fff; stroke-width: 1.2; }
+  .travel-compass-sector { fill-opacity: .4; stroke: #fff; stroke-width: 1.2; }
   .travel-compass-ring { fill: none; stroke: #fff; stroke-width: 1.2; }
   /* 文字：黑字＋宋體，白色描邊(paint-order:stroke)讓文字在任何底色扇形上都清楚可讀 */
   .travel-compass-gua, .travel-compass-dir, .travel-compass-dot {
@@ -1010,25 +1010,28 @@
   .travel-inline-map { position: absolute; inset: 0; transform: rotate(180deg); transition: transform .5s ease; /* 預設南上北下，配合盤面慣例；旋轉按鈕（2b）平滑轉為北上南下 */ }
   /* 2b 旋轉狀態：地圖轉正（北上南下）。宮位內容對調（4↔6、9↔1、2↔8、7↔3）由 JS 直接搬動 DOM 節點完成，不靠 CSS。 */
   .outer.travel-map-mode.travel-map-rotated .travel-inline-map { transform: rotate(0deg); }
-  /* 工具列放在方框外、正上方（原引干 yigan-top 佔用的空間），不疊在地圖上擋視線；預設隱藏，僅地圖模式顯示 */
-  .travel-inline-toolbar {
-    display: none;
-    position: absolute; z-index: 5; top: -32px; left: 16.667%; transform: translateX(-50%);
-    justify-content: center; gap: 10px;
-  }
-  .outer.travel-map-mode .travel-inline-toolbar { display: flex; }
+  /* 工具列（原本放方框上方置中的「盤」按鈕，已改移到右下角疊在定位鈕上方，見下方角落按鈕樣式）*/
   .travel-inline-exit, .travel-inline-locate, .travel-inline-board-toggle, .travel-inline-fullscreen {
     width: 30px; height: 30px; border-radius: 50%;
     border: none; background: rgba(255,255,255,.92); color: #333;
     font-size: 15px; display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 2px 6px rgba(0,0,0,.2); flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,.2); flex-shrink: 0;
   }
   .travel-inline-board-toggle { font-size: 12px; }
   .travel-inline-board-toggle.active { background: #2471a3; color: #fff; }
+  .travel-inline-board-toggle .eye-open, .travel-inline-board-toggle .eye-closed { display: none; }
+  .travel-inline-board-toggle .eye-closed { display: block; }
+  .travel-inline-board-toggle.active .eye-closed { display: none; }
+  .travel-inline-board-toggle.active .eye-open { display: block; }
+  /* 眼睛鈕移到方框右下角，疊在定位鈕正上方（同一欄，8px間距垂直堆疊） */
+  .travel-inline-board-toggle { position: absolute; z-index: 2; bottom: 46px; right: 8px; }
   .travel-inline-locate { position: absolute; z-index: 2; bottom: 8px; right: 8px; color: #2471a3; }
   /* 階段三：全螢幕展開鈕，方框右上角，只在地圖模式（.travel-map-mode）常駐顯示，跟旋轉/盤面狀態無關 */
   .travel-inline-fullscreen { display: none; position: absolute; z-index: 5; top: -8px; right: -8px; font-size: 13px; }
   .outer.travel-map-mode .travel-inline-fullscreen { display: flex; }
+  /* 返回鈕：本質是「跳出地圖模式」，移到方框左上角，與右上角的全螢幕展開鈕對稱 */
+  .travel-inline-exit { display: none; position: absolute; z-index: 5; top: -8px; left: -8px; font-size: 13px; }
+  .outer.travel-map-mode .travel-inline-exit { display: flex; }
   .travel-inline-exit:active, .travel-inline-locate:active, .travel-inline-board-toggle:active, .travel-inline-fullscreen:active { opacity: .85; }
 
   /* 地圖模式：九宮格線（.cell 邊框）與 r1c1 宮位標籤留在畫面上，其餘內容透明化／隱藏，讓地圖從縫間透出 */
@@ -1287,18 +1290,18 @@
   <div class="yigan mingpan-label rg-left-c"   id="mp-left-c"   style="display:none;"></div>
   <div class="yigan mingpan-label rg-left-t"   id="mp-left-t"   style="display:none;"></div>
 
-  <!-- 出行訣 階段二：方框上方（原引干位置）的操作列，只在地圖模式顯示 -->
-  <div class="travel-inline-toolbar">
-    <button type="button" class="travel-inline-exit" id="travel-inline-exit" aria-label="返回盤面">←</button>
-    <button type="button" class="travel-inline-board-toggle" id="travel-inline-board-toggle" aria-label="顯示/隱藏盤面">盤</button>
-  </div>
+  <!-- 返回鈕：本質是「跳出地圖模式」，移到方框左上角，與右上角的全螢幕展開鈕對稱 -->
+  <button type="button" class="travel-inline-exit" id="travel-inline-exit" aria-label="返回盤面">←</button>
   <!-- 出行訣 階段三：全螢幕展開鈕，方框右上角，點擊後進入既有的全螢幕扇形羅盤（travel-overlay） -->
   <button type="button" class="travel-inline-fullscreen" id="travel-inline-fullscreen" aria-label="展開全螢幕羅盤">⛶</button>
 
   <!-- 出行訣 階段二 2a：方框內嵌地圖。z-index 低於 .grid，透過 .cell 背景透明讓地圖從九宮線縫間透出 -->
   <div class="travel-inline-map-wrap" id="travel-inline-map-wrap" style="display:none;">
     <div class="travel-inline-map" id="travel-inline-map"></div>
-    <button type="button" class="travel-inline-locate" id="travel-inline-locate" aria-label="拉回目前位置">◎</button>
+    <!-- 眼睛圖示（Feather風格）：張開＝盤面顯示中（board-visible），閉眼（變形＋斜線）＝盤面隱藏（只看地圖）；預設閉眼，見CSS/JS同步切換。
+         位置移到方框右下角，疊在定位鈕正上方 -->
+    <button type="button" class="travel-inline-board-toggle" id="travel-inline-board-toggle" aria-label="顯示/隱藏盤面"><svg class="eye-open" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12C1 12 5 5 12 5C19 5 23 12 23 12C23 12 19 19 12 19C5 19 1 12 1 12Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="eye-closed" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 15.2C21.9 13.9 23 12 23 12C23 12 19 5 12 5C10.9 5 9.9 5.2 9 5.5M6.5 6.9C3.2 8.8 1 12 1 12C1 12 5 19 12 19C13.9 19 15.6 18.5 17 17.7"/><path d="M9.9 10C9.3 10.6 9 11.3 9 12C9 13.7 10.3 15 12 15C12.7 15 13.4 14.7 14 14.2"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button>
+    <button type="button" class="travel-inline-locate" id="travel-inline-locate" aria-label="拉回目前位置"><svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg></button>
   </div>
 
   <div class="grid">
@@ -1494,14 +1497,16 @@
   <div class="travel-board-layer" id="travel-board-layer"></div>
   <div class="travel-compass" aria-label="八方位羅盤">
     <svg class="travel-compass-disc" id="travel-compass-disc" viewBox="0 0 200 200">
-      <path class="travel-compass-sector" data-house="1" d="M100 100 L67.47 21.47 A85 85 0 0 1 132.53 21.47 Z" fill="#29B6F6" vector-effect="non-scaling-stroke"/>
-      <path class="travel-compass-sector" data-house="8" d="M100 100 L132.53 21.47 A85 85 0 0 1 178.53 67.47 Z" fill="#6F4E37" vector-effect="non-scaling-stroke"/>
-      <path class="travel-compass-sector" data-house="3" d="M100 100 L178.53 67.47 A85 85 0 0 1 178.53 132.53 Z" fill="#2E7D32" vector-effect="non-scaling-stroke"/>
-      <path class="travel-compass-sector" data-house="4" d="M100 100 L178.53 132.53 A85 85 0 0 1 132.53 178.53 Z" fill="#66BB6A" vector-effect="non-scaling-stroke"/>
-      <path class="travel-compass-sector" data-house="9" d="M100 100 L132.53 178.53 A85 85 0 0 1 67.47 178.53 Z" fill="#D32F2F" vector-effect="non-scaling-stroke"/>
-      <path class="travel-compass-sector" data-house="2" d="M100 100 L67.47 178.53 A85 85 0 0 1 21.47 132.53 Z" fill="#C8A878" vector-effect="non-scaling-stroke"/>
-      <path class="travel-compass-sector" data-house="7" d="M100 100 L21.47 132.53 A85 85 0 0 1 21.47 67.47 Z" fill="#CFD5DC" vector-effect="non-scaling-stroke"/>
-      <path class="travel-compass-sector" data-house="6" d="M100 100 L21.47 67.47 A85 85 0 0 1 67.47 21.47 Z" fill="#8E9AAF" vector-effect="non-scaling-stroke"/>
+      <!-- 配色定案（2026.08）：五行對應色相，同屬性依陰陽分深淺（陽深陰淺，後天八卦分類：乾震坎艮為陽卦、坤巽離兌為陰卦）。
+           水(坎)＝暖調藍；火(離)＝暖珊瑚桃紅；木(震陽/巽陰)＝深/淺綠；土(艮陽/坤陰)＝深/淺黃褐；金(乾陽/兌陰)＝暖銀灰/近白珍珠，避免用黃（黃屬土非金） -->
+      <path class="travel-compass-sector" data-house="1" d="M100 100 L67.47 21.47 A85 85 0 0 1 132.53 21.47 Z" fill="#5EC4E0" vector-effect="non-scaling-stroke"/>
+      <path class="travel-compass-sector" data-house="8" d="M100 100 L132.53 21.47 A85 85 0 0 1 178.53 67.47 Z" fill="#C97D3E" vector-effect="non-scaling-stroke"/>
+      <path class="travel-compass-sector" data-house="3" d="M100 100 L178.53 67.47 A85 85 0 0 1 178.53 132.53 Z" fill="#8BC34A" vector-effect="non-scaling-stroke"/>
+      <path class="travel-compass-sector" data-house="4" d="M100 100 L178.53 132.53 A85 85 0 0 1 132.53 178.53 Z" fill="#C5D96C" vector-effect="non-scaling-stroke"/>
+      <path class="travel-compass-sector" data-house="9" d="M100 100 L132.53 178.53 A85 85 0 0 1 67.47 178.53 Z" fill="#FF7597" vector-effect="non-scaling-stroke"/>
+      <path class="travel-compass-sector" data-house="2" d="M100 100 L67.47 178.53 A85 85 0 0 1 21.47 132.53 Z" fill="#E8B88A" vector-effect="non-scaling-stroke"/>
+      <path class="travel-compass-sector" data-house="7" d="M100 100 L21.47 132.53 A85 85 0 0 1 21.47 67.47 Z" fill="#F5F0E6" vector-effect="non-scaling-stroke"/>
+      <path class="travel-compass-sector" data-house="6" d="M100 100 L21.47 67.47 A85 85 0 0 1 67.47 21.47 Z" fill="#C7C4BC" vector-effect="non-scaling-stroke"/>
       <circle class="travel-compass-ring" cx="100" cy="100" r="85" vector-effect="non-scaling-stroke"/>
       <text class="travel-compass-gua" data-house="1" x="100" y="146" transform="rotate(180 100 100)" fill="#222">坎</text>
       <text class="travel-compass-gua" data-house="8" x="100" y="146" transform="rotate(225 100 100)" fill="#222">艮</text>
