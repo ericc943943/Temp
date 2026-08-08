@@ -1010,7 +1010,7 @@
   .travel-inline-map { position: absolute; inset: 0; transform: rotate(180deg); transition: transform .5s ease; /* 預設南上北下，配合盤面慣例；旋轉按鈕（2b）平滑轉為北上南下 */ }
   /* 2b 旋轉狀態：地圖轉正（北上南下）。宮位內容對調（4↔6、9↔1、2↔8、7↔3）由 JS 直接搬動 DOM 節點完成，不靠 CSS。 */
   .outer.travel-map-mode.travel-map-rotated .travel-inline-map { transform: rotate(0deg); }
-  /* 工具列（原本放方框上方置中的「盤」按鈕，已改移到右下角疊在定位鈕上方，見下方角落按鈕樣式）*/
+  /* 工具列（原本放方框上方置中的「盤」按鈕，已改移到右上角、疊在全螢幕鈕正下方，見下方角落按鈕樣式）*/
   .travel-inline-exit, .travel-inline-locate, .travel-inline-board-toggle, .travel-inline-fullscreen {
     width: 30px; height: 30px; border-radius: 50%;
     border: none; background: rgba(255,255,255,.92); color: #333;
@@ -1023,12 +1023,15 @@
   .travel-inline-board-toggle .eye-closed { display: block; }
   .travel-inline-board-toggle.active .eye-closed { display: none; }
   .travel-inline-board-toggle.active .eye-open { display: block; }
-  /* 眼睛鈕移到方框右下角，疊在定位鈕正上方（同一欄，8px間距垂直堆疊） */
-  .travel-inline-board-toggle { position: absolute; z-index: 2; bottom: 46px; right: 8px; }
   .travel-inline-locate { position: absolute; z-index: 2; bottom: 8px; right: 8px; color: #2471a3; }
   /* 階段三：全螢幕展開鈕，方框右上角，只在地圖模式（.travel-map-mode）常駐顯示，跟旋轉/盤面狀態無關 */
   .travel-inline-fullscreen { display: none; position: absolute; z-index: 5; top: -8px; right: -8px; font-size: 13px; }
   .outer.travel-map-mode .travel-inline-fullscreen { display: flex; }
+  /* 眼睛鈕（顯示/隱藏盤面）：改成跟 ←、⛶ 同一種「疊在方框邊框上、獨立浮動」做法，z-index:5，
+     不能放進 travel-inline-map-wrap（z-index:0）內部——該容器的堆疊層級整體低於九宮格（z-index:1），
+     即使內部元件自訂z-index也救不回來，會被盤面點擊層蓋住點不到。放在右上角、疊在全螢幕鈕正下方 */
+  .travel-inline-board-toggle { display: none; position: absolute; z-index: 5; top: 30px; right: -8px; }
+  .outer.travel-map-mode .travel-inline-board-toggle { display: flex; }
   /* 返回鈕：本質是「跳出地圖模式」，移到方框左上角，與右上角的全螢幕展開鈕對稱 */
   .travel-inline-exit { display: none; position: absolute; z-index: 5; top: -8px; left: -8px; font-size: 13px; }
   .outer.travel-map-mode .travel-inline-exit { display: flex; }
@@ -1294,13 +1297,14 @@
   <button type="button" class="travel-inline-exit" id="travel-inline-exit" aria-label="返回盤面">←</button>
   <!-- 出行訣 階段三：全螢幕展開鈕，方框右上角，點擊後進入既有的全螢幕扇形羅盤（travel-overlay） -->
   <button type="button" class="travel-inline-fullscreen" id="travel-inline-fullscreen" aria-label="展開全螢幕羅盤">⛶</button>
+  <!-- 眼睛圖示（Feather風格）：張開＝盤面顯示中（board-visible），閉眼（變形＋斜線）＝盤面隱藏（只看地圖）；預設閉眼，見CSS/JS同步切換。
+       位置在方框右上角、疊在全螢幕鈕正下方；必須是獨立浮動元件（不能放進 travel-inline-map-wrap，見CSS註解），
+       否則會被九宮格點擊層（board-visible時）蓋住，點不到、無法再次隱藏 -->
+  <button type="button" class="travel-inline-board-toggle" id="travel-inline-board-toggle" aria-label="顯示/隱藏盤面"><svg class="eye-open" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12C1 12 5 5 12 5C19 5 23 12 23 12C23 12 19 19 12 19C5 19 1 12 1 12Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="eye-closed" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 15.2C21.9 13.9 23 12 23 12C23 12 19 5 12 5C10.9 5 9.9 5.2 9 5.5M6.5 6.9C3.2 8.8 1 12 1 12C1 12 5 19 12 19C13.9 19 15.6 18.5 17 17.7"/><path d="M9.9 10C9.3 10.6 9 11.3 9 12C9 13.7 10.3 15 12 15C12.7 15 13.4 14.7 14 14.2"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button>
 
   <!-- 出行訣 階段二 2a：方框內嵌地圖。z-index 低於 .grid，透過 .cell 背景透明讓地圖從九宮線縫間透出 -->
   <div class="travel-inline-map-wrap" id="travel-inline-map-wrap" style="display:none;">
     <div class="travel-inline-map" id="travel-inline-map"></div>
-    <!-- 眼睛圖示（Feather風格）：張開＝盤面顯示中（board-visible），閉眼（變形＋斜線）＝盤面隱藏（只看地圖）；預設閉眼，見CSS/JS同步切換。
-         位置移到方框右下角，疊在定位鈕正上方 -->
-    <button type="button" class="travel-inline-board-toggle" id="travel-inline-board-toggle" aria-label="顯示/隱藏盤面"><svg class="eye-open" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12C1 12 5 5 12 5C19 5 23 12 23 12C23 12 19 19 12 19C5 19 1 12 1 12Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="eye-closed" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 15.2C21.9 13.9 23 12 23 12C23 12 19 5 12 5C10.9 5 9.9 5.2 9 5.5M6.5 6.9C3.2 8.8 1 12 1 12C1 12 5 19 12 19C13.9 19 15.6 18.5 17 17.7"/><path d="M9.9 10C9.3 10.6 9 11.3 9 12C9 13.7 10.3 15 12 15C12.7 15 13.4 14.7 14 14.2"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button>
     <button type="button" class="travel-inline-locate" id="travel-inline-locate" aria-label="拉回目前位置"><svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg></button>
   </div>
 
